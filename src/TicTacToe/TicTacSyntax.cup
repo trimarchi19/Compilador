@@ -1,0 +1,800 @@
+package TicTacToe;
+
+import java_cup.runtime.*;
+import classes.*;
+import java.util.ArrayList;
+import java.lang.reflect.*;
+
+parser code {:
+public Compilador root = null;
+
+    ArrayList<StringBuilder> errores = new ArrayList();
+    ArrayList<StringBuilder> errores3 = new ArrayList();
+    ArrayList<String> errores2 = new ArrayList();
+
+    @Override
+    public void report_error(String message, Object info) {
+System.out.println(info +"Esto es la info");
+    	StringBuilder m = new StringBuilder("Syntax Error");
+		if (info instanceof java_cup.runtime.Symbol) {
+
+			java_cup.runtime.Symbol s = ((java_cup.runtime.Symbol) info);
+			if (s.left >= 0) {
+				m.append(" at line "+(s.left+1));
+				if (s.right >= 0)
+					m.append(", column "+(s.right+1));
+			}
+			if (s.sym == 0) {
+				m.append(" : Part of declaration (main or function) is missing");
+			}else{
+				m.append(" Unexpected token: "+ getToken(s.sym) +" |"+message);
+			}
+		}
+                errores.add(m);
+       
+    }
+
+    public void addError(String message, Object info) {
+
+
+    	StringBuilder m = new StringBuilder("Syntax Error");
+		if (info instanceof java_cup.runtime.Symbol) {
+			java_cup.runtime.Symbol s = ((java_cup.runtime.Symbol) info);
+			if (s.left >= 0) {
+				m.append(" at line "+(s.left+1));
+				if (s.right >= 0)
+					m.append(", column "+(s.right+1));
+			}
+			if (s.sym == 0) {
+				m.append(" : Part of declaration (main or function) is missing");
+			}else{
+				m.append(" Unexpected token: "+ getToken(s.sym) +" |"+message);
+			}
+		}
+        
+                errores3.add(m);
+    }
+    public void addError(String message) {
+            System.err.println(message);
+                errores2.add(message);
+    }
+
+
+    private String getToken(int id) {
+        try {
+	        Field [] field = sym.class.getFields();
+	        for (int i = 0; i < field.length; i++) {
+	          	if (field[i].getInt(null) == id) {
+	                return field[i].getName();
+	            }
+	            
+	        }
+        } catch (Exception e) {          
+        }
+        return "UNKOWN";
+    }
+    
+
+    public void report_fatal_error(String message, Object info) {
+		//report_error(" Could not recover", info);
+	}
+    
+    @Override
+    public int error_sync_size(){
+        return 2;
+    }
+
+:};
+
+
+
+terminal INT,SET,AS,BOOL,VOID,FUNC,MAIN,WRITE,WRITELN,READ,DELIM,OPENFUNC
+          ,CLOSEFUNC,COMMA,PARIZQ,PARDER,IGUAL,OR,AND,FOR,CFOR,WHILE,CWHILE
+          ,IF,ELSIF,ELSE,CIF,SWITCH,CSWITCH,ENDCASE,DEFCASE,RETURN,BREAK,CASE
+          ,CHAR,SUMRES,MULTDIV,BOOLEX,NULL,BOOLVAL,CHARVAL,ARRAYD,ARRAYDD,INTEGER,ID
+          ,ARRAYDVALC,ARRAYDDVALC,ARRAYDVALI,ARRAYDDVALI;
+
+
+
+
+
+non terminal Compilador compilador;
+non terminal MainClause mainClause;
+non terminal FunctionDeclaration functionDeclaration;
+non terminal FunctionDeclarationList functionDeclarationL;
+non terminal FunctionList functionList;
+non terminal Function function;
+non terminal Argument argument;
+non terminal ArgumentList argumentList;
+non terminal Expression expression;
+non terminal Expressions expressions;
+non terminal Types type;
+non terminal ReturnStatement returnStatement;
+non terminal VariableDeclaration variableDeclaration;
+non terminal Statements statements;
+non terminal Scanners scanners;
+non terminal Printers printers;
+non terminal Variables variables;
+non terminal VarDeclarationList varDeclList;
+non terminal Value value;
+non terminal IfStatement ifStatement;
+non terminal ElseStatement elseStatement;
+non terminal Condition condition;
+non terminal WhileStatement whileStatement;
+non terminal ForStatement forStatement;
+non terminal Inits inits;
+non terminal ForArthmExp forArthmExp;
+non terminal AndOR andOr;
+non terminal ArithmeticExp arithmeticExp;  
+non terminal Term term;
+non terminal Factor factor;
+non terminal Assignment assignment;
+non terminal AssignmentProc assignmentProc;
+non terminal String opsum;
+non terminal String opmultdiv;
+non terminal String operators;
+non terminal String writers;
+
+non terminal SwitchStatement switchStatement;
+non terminal Cases cases;
+non terminal Case cas;
+
+
+
+precedence left OR;
+precedence nonassoc BOOLEX;
+precedence left SUMRES;
+precedence left MULTDIV;
+precedence left PARIZQ, PARDER;
+precedence right ELSE;
+precedence right ID;
+
+
+start with compilador;
+
+compilador ::= mainClause:mc             {:
+                MyNode tree = new MyNode("RAIZ");
+                tree.addHijo( (MyNode) mc );
+                
+                parser.root = tree;
+		
+		//RESULT = tree.print();
+		
+                
+            :}
+            | mainClause:mc functionList:fl 
+            {:  
+                MyNode tree = new MyNode("RAIZ");
+                tree.addHijo( (MyNode) mc );
+                tree.addHijo((MyNode) fl);
+                
+		
+            :}
+				|error compilador 
+
+				;
+
+mainClause ::= FUNC type:t MAIN:m PARIZQ argumentList:a PARDER OPENFUNC expressions:e CLOSEFUNC {:
+					MainClause r = new MainClause(t, (String)m, a, e);
+					RESULT = r;
+				:}
+                                |
+                               error:err type:t MAIN:m PARIZQ argumentList:a PARDER OPENFUNC expressions:e CLOSEFUNC {:
+                                   parser.addError("MISSING TOKEN : FUNC" );
+				:}
+                                |
+                               FUNC error:err MAIN:m PARIZQ argumentList:a PARDER OPENFUNC expressions:e CLOSEFUNC {:
+                                   //System.err.println("Expected type before main");
+
+                                   parser.addError("MISSING TOKEN : TYPE");
+
+				:}
+                                |
+                               FUNC type:t error:er PARIZQ argumentList:a PARDER OPENFUNC expressions:e CLOSEFUNC {:
+                                    parser.addError("MISSING TOKEN :  MAIN");
+                                
+				:}
+                                |
+                               FUNC type:t MAIN:m PARIZQ argumentList:a PARDER error:er expressions:e CLOSEFUNC {:
+                                   parser.addError("ERROR NEAR:  OPENFUNC-EXPRESSION");
+                           
+				:}
+
+;
+
+functionDeclarationL ::=  functionDeclarationL:fdl functionDeclaration:fd{:
+					FunctionDeclarationList r = new FunctionDeclarationList(fdl, fd);
+					RESULT = r;
+				:}
+				| functionDeclaration:fd {:
+					FunctionDeclarationList r = new FunctionDeclarationList(fd);
+					RESULT = r;
+				:}
+				;
+
+
+functionDeclaration ::=         FUNC type:t ID:id PARIZQ argumentList:a PARDER DELIM {:
+					FunctionDeclaration r = new FunctionDeclaration(t, (String)id, a);
+					RESULT = r;
+				:}
+                                |
+                                error type:t ID:id PARIZQ argumentList:a PARDER DELIM {:
+					 parser.addError("MISSING TOKEN IN FUNCTION DECLARATION");
+					
+				:}
+                                |
+                                FUNC type:t error PARIZQ argumentList:a PARDER DELIM {:
+					 parser.addError("MISSING TOKEN :  ID");
+					
+				:}
+                                 |
+                                FUNC type:t ID:id error argumentList:a PARDER DELIM {:
+                            parser.addError("MISSING TOKEN IN FUNCTION DECLARATION");
+				:}
+                                |
+                                FUNC type:t ID:id PARIZQ argumentList:a error DELIM {:
+                        parser.addError("MISSING TOKEN IN FUNCTION DECLARATION");
+					
+				:}
+				;
+
+functionList ::= function:f functionList:fl {:
+					FunctionList r = new FunctionList(fl, f);
+					RESULT = r;
+				:}
+				| function:f {:
+					FunctionList r = new FunctionList(f);
+					RESULT = r; 
+				:}
+				;
+
+function ::= FUNC type:t ID:id PARIZQ argumentList:a PARDER OPENFUNC expressions:e CLOSEFUNC {:
+					Function r = new Function(t, (String)id, a, e);
+					RESULT = r;
+				:}
+				|FUNC type error PARIZQ argumentList PARDER OPENFUNC expressions CLOSEFUNC {:
+					 parser.addError("MISSING FUNCTION ID");
+					
+				:}
+				|FUNC error ID PARIZQ argumentList PARDER OPENFUNC expressions CLOSEFUNC {:
+					 parser.addError("MISSING FUNCTION: TYPE");
+					
+				:}
+				|FUNC type ID error argumentList PARDER OPENFUNC expressions CLOSEFUNC {:
+					 parser.addError("MISSING TOKEN : PARIZQ");
+					
+				:}
+				|FUNC type ID PARIZQ argumentList error OPENFUNC expressions CLOSEFUNC {:
+					 parser.addError("MISSING TOKEN NEAR: PARDER/EXPRESSION");
+
+					
+				:}
+				;
+
+argumentList ::= argument:a COMMA argumentList:al {:
+					ArgumentList r = new ArgumentList(al, a);
+					RESULT = r;
+				:}
+				| argument:a {:
+					ArgumentList r = new ArgumentList(a);
+					RESULT = r;
+				:}
+				|  {:
+					RESULT = null;
+				:}
+				;
+
+argument ::= type:t ID:id {:
+			      Argument r = new Argument(t, (String)id);
+					RESULT = r;
+				:}
+				| type error {:  
+					System.err.println("MISSING ARGUMENT TYPE/ID");
+				:}
+				;
+
+expressions ::= expression:e expressions:es {:
+					Expressions r = new Expressions(es, e);
+					RESULT = r;
+				:}
+				| expression:e {:
+					Expressions r = new Expressions(e);
+					RESULT = r;
+				:}
+				;
+
+expression ::=                  variableDeclaration:vd {:
+					Expression r = new Expression(vd);
+					RESULT = r;
+				:}
+				| statements:s {:
+					Expression r = new Expression(s);
+					RESULT = r;
+				:}
+                                | scanners:s {:
+					Expression r = new Expression(s);
+					RESULT = r;
+				:}
+				| printers:p {:
+					Expression r = new Expression(p);
+					RESULT = r;
+				:}
+				| returnStatement:rs {:
+					Expression r = new Expression(rs);
+					RESULT = r;
+				:}
+				;
+returnStatement ::= RETURN:ret value:val DELIM{:
+						ReturnStatement r = new ReturnStatement((String)ret, val);
+						RESULT = r;
+					:}
+					| RETURN error DELIM{:
+						 parser.addError("MISSING RETURN VALUE");
+						
+					:}
+					| RETURN value error {:
+						parser.addError("MISSING DELIM EXPECTED '#'");
+						
+					:}
+					;
+
+
+variableDeclaration ::=         SET type:t varDeclList:v DELIM {:
+                                    VariableDeclaration r = new VariableDeclaration(t, v);
+                                    RESULT = r;
+                                :}
+                                |
+                               varDeclList:v DELIM{:
+					  VariableDeclaration r = new VariableDeclaration(v);
+                                    RESULT = r;
+                                :}
+                                |
+                                SET error varDeclList:v DELIM {:
+                                parser.addError("EXPECTED TYPE IN VARIABLE DECLARATION");	
+                
+                            
+                                :}
+                                |
+                                SET type:t error DELIM {:
+                                parser.addError("EXPECTED VARIABLE DECLARATION");	
+         
+                            
+                                :}
+
+						;
+
+varDeclList ::=                 varDeclList:v COMMA variables:vars {:
+					VarDeclarationList r = new VarDeclarationList(v,vars);
+					RESULT = r;
+				:}
+				| variables:vars {:
+					VarDeclarationList r = new VarDeclarationList(vars);
+					RESULT = r;
+				:}
+                                |
+                                varDeclList:v error variables:vars {:
+					parser.addError("EXPECTED SEPARATOR ',' IN VARIABLE DECLARATION");
+				:}
+				;
+
+variables ::=                   ID:id  assignmentProc:a {:
+                                        Value v =   new Value((String)id, "id");    
+					Variables r = new Variables(v, a);
+					RESULT = r;
+                                         
+				:}
+                                
+			  	;
+
+assignmentProc ::= AS assignment:a {:
+						AssignmentProc r = new AssignmentProc(a);
+						RESULT = r;
+					:}
+					| {:
+						RESULT = null;
+					:}
+					;
+
+assignment ::= arithmeticExp:aE {:
+					Assignment r = new Assignment(aE);
+					RESULT = r;
+				:}
+				;
+
+arithmeticExp ::= arithmeticExp:e opsum:opsum term:t {:
+						if (((String)opsum).equals("+")) {
+							ArithmeticExp r = new ArithmeticExp(e, "+", t);
+							RESULT = r;
+						}else  {
+							ArithmeticExp r = new ArithmeticExp(e, "-", t);
+                                                System.out.print(r);
+							RESULT = r;
+                                                }
+						
+					:}
+					|term:t {:
+						ArithmeticExp r = new ArithmeticExp(t);
+
+						RESULT = r;
+					:}
+					;
+
+
+term ::= term:t opmultdiv:op factor:f {:
+    				if (((String)op).equals("*")) {
+                                    Term r = new Term(t, "*", f);
+                                    RESULT = r;
+				}else if (((String)op).equals("/")) {
+                                    Term r = new Term(t, "/", f);
+                                    RESULT = r;
+				}
+			:}
+			| factor:f {:
+				Term r = new Term(f);
+				RESULT = r;
+			:}
+			;
+
+
+factor ::= PARIZQ arithmeticExp:e PARDER {:
+                  
+				Factor r = new Factor(e);
+				RESULT = r;
+			:}
+			|value:val {:
+				Factor r = new Factor(val);
+				RESULT = r;
+			:}
+			;
+
+
+
+value ::=               INTEGER:num {:
+				RESULT = new Value((String)num, "int");
+			:}
+			|ID:id {:
+				RESULT = new Value((String)id, "id");
+			:}
+			|CHARVAL:character {:
+				RESULT = new Value((String)character, "char");
+			:}
+			|BOOLVAL:tF {:
+				RESULT = new Value((String)tF, "bool");
+			:}
+                        |ARRAYDVALC:advalC{:
+				RESULT = new Value((String)advalC, "array char");
+			:}
+                        |ARRAYDDVALC:addvalC{:
+				RESULT = new Value((String)addvalC, "matrix char");
+			:}
+                        |ARRAYDVALI:advalI{:
+				RESULT = new Value((String)advalI, "array int");
+			:}
+                        |ARRAYDDVALI:addvalI{:
+				RESULT = new Value((String)addvalI, "matrix int");
+			:}
+			|NULL:n {:
+				RESULT = new Value((String)n, "null");
+			:}
+			;
+
+type ::=        INT:i {:
+			Types r = new Types((String)i);
+			RESULT = r;
+		:}
+		| CHAR:c {:
+			Types r = new Types((String)c);
+			RESULT = r;
+		:}
+		| ARRAYD:ad {:
+			Types r = new Types((String)ad);
+			RESULT = r;
+		:}
+		| ARRAYDD:add {:
+			Types r = new Types((String)add);
+			RESULT = r;
+		:}
+		| BOOL:b {:
+			Types r = new Types((String)b);
+			RESULT = r;
+		:}
+		| VOID:v {:
+			Types r = new Types((String)v);
+			RESULT = r;
+		:}
+		;
+
+statements ::=                  ifStatement:ifs 	{: 
+					Statements r = new Statements(ifs);
+					RESULT = r; 
+				:}	
+				|whileStatement:wS {:
+					Statements r = new Statements(wS);
+					RESULT = r; 	
+				:}
+				|forStatement:fS {:
+					Statements r = new Statements(fS);
+					RESULT = r; 	
+				:} 
+                                |
+                                   switchStatement:sS {:
+					Statements r = new Statements(sS);
+					RESULT = r;
+				:}
+				;
+switchStatement ::=             SWITCH:i PARIZQ ID:id PARDER cases:cS CSWITCH:cl{:
+					SwitchStatement r = new SwitchStatement((String)i, (String)id, cS,(String)cl);
+					RESULT = r;
+				:}
+                                |
+                                SWITCH:i error ID:id PARDER cases:cS CSWITCH:cl{:
+					parser.addError("MISSING PARIZQ SWITCH");
+   
+				:}
+                                |
+                                SWITCH:i PARIZQ error PARDER cases:cS CSWITCH:cl{:
+					parser.addError("MISSING SWITCH ID");
+				:}
+                                |
+                                SWITCH:i PARIZQ ID:id error cases:cS CSWITCH:cl{:
+					parser.addError("ERROR NEAR SWITCH-CASE:  PARDER-EXPRESSION");
+				:}
+                                ;
+
+
+cases ::=  cas:c cases:cs {:
+					Cases r = new Cases(cs, c);
+					RESULT = r;
+				:}
+				| cas:c {:
+					Cases r = new Cases(c);
+					RESULT = r;
+				:}
+				;
+
+
+cas ::=                     value:vl CASE:ca expressions:es ENDCASE:en DELIM {:
+					Case r = new Case(vl,(String)ca , es,(String)en);
+					RESULT = r;
+				:}
+				;
+
+ifStatement ::=                 IF:i PARIZQ condition:c PARDER expressions:e CIF{:
+					IfStatement r = new IfStatement((String)i, c, e);
+					RESULT = r;
+				:}
+                                |IF:i PARIZQ condition:c PARDER expressions:en elseStatement:eS CIF{:
+                                    IfStatement temp = new IfStatement((String)i, c, en);
+                                                        IfStatement r = new IfStatement(temp, eS);
+                                    RESULT = r;
+                                :}
+				| IF:i error condition:c PARDER expressions:e CIF{:
+					parser.addError("MISSING TOKEN: PARIZQ IF");
+
+				:}
+				| IF:i PARIZQ error PARDER expressions:e CIF{:
+					parser.addError("MISSING IF CONDITION");
+
+				:}
+				| IF:i PARIZQ condition:c error expressions:e CIF{:
+					parser.addError("ERROR NEAR IF:  PARDER-EXPRESSION ");
+
+				:}
+
+
+
+;
+
+elseStatement ::= ELSE:eS expressions:e {: 
+					ElseStatement r = new ElseStatement((String)eS, e);
+					RESULT = r;
+				:}
+                                 ;
+
+condition ::=           value:v1 operators:b value:v2 {:
+				Condition r = new Condition(v1,(String)b,v2);
+				RESULT = r;
+			:}
+			| value:v1 operators:b value:v2 andOr:aO {:
+				Condition r = new Condition(v1,(String)b,v2,aO);
+				RESULT = r;
+			:}
+			| value operators error{:
+				parser.addError("EXPECTED FINAL CONDITION VALUE");
+
+			:}
+			| value error value{:
+				parser.addError("EXPECTED CONDITION VALUE");
+
+			:}
+			;
+
+operators ::= BOOLEX:b {:
+
+				if (((String)b).equals("<")) {
+					RESULT = "<";
+				}else if (((String)b).equals(">")) {
+					RESULT = ">";
+				}else if (((String)b).equals("<=")) {
+					RESULT = "<=";
+				}else if (((String)b).equals(">=")) {
+					RESULT = ">=";
+				}else if (((String)b).equals("!=")) {
+					RESULT = "!=";
+				}else if (((String)b).equals("==")) {
+					RESULT = "==";
+				}else{
+					
+				}
+			:}
+			;
+
+andOr ::=       AND:a condition:c {:
+			RESULT = new AndOR((String)a,c);
+		:}
+		| OR:o condition:c {:
+			RESULT = new AndOR((String)o,c);
+		:}
+		;
+
+whileStatement ::=              WHILE:w PARIZQ condition:c PARDER expressions:e CWHILE {:
+                                    WhileStatement r = new WhileStatement((String)w, c, e);
+					RESULT = r;
+				:}
+				|WHILE:w error condition:c PARDER expressions:e CWHILE {:
+					parser.addError("MISSING TOKEN: PARIZQ WHILE");
+				:}
+				|WHILE:w PARIZQ error PARDER expressions:e CWHILE {:
+					parser.addError("MISSING WHILE CONDITION");
+				:}
+				|WHILE:w PARIZQ condition:c error expressions:e CWHILE {:
+					parser.addError("MISSING TOKEN: PARDER WHILE ");
+				:}
+				|WHILE:w PARIZQ condition:c PARDER error CWHILE {:
+					parser.addError("MISSING/ERROR WHILE EXPRESSION");
+				:}
+				;
+
+forStatement ::= FOR:f PARIZQ inits:i DELIM condition:c DELIM forArthmExp:aE PARDER  expressions:e CFOR{:
+                                    ForStatement r = new ForStatement((String)f, i, c, aE, e);
+                                    RESULT = r;
+				:}
+                                |
+                                FOR:f error inits:i DELIM condition:c DELIM forArthmExp:aE PARDER  expressions:e CFOR{:
+                                   parser.addError("MISSING TOKEN: PARIZQ FOR");
+				:}
+                                |
+                                FOR:f PARIZQ error DELIM condition:c DELIM forArthmExp:aE PARDER  expressions:e CFOR{:
+                                 parser.addError("MISSING INIT IN FOR");
+				:}
+                                |
+                                FOR:f PARIZQ inits:i error condition:c DELIM forArthmExp:aE PARDER  expressions:e CFOR{:
+                                 parser.addError("MISSING  DELIM INSIDE FOR");
+				:}
+                                |
+                                FOR:f PARIZQ inits:i DELIM error DELIM forArthmExp:aE PARDER  expressions:e CFOR{:
+                                    parser.addError("MISSING CONDITION INSIDE FOR");
+				:}
+                                |
+                                FOR:f PARIZQ inits:i DELIM condition:c error forArthmExp:aE PARDER  expressions:e CFOR{:
+                                   parser.addError("MISSING DELIM INSIDE FOR");
+				:}
+                               |
+                                FOR:f PARIZQ inits:i DELIM condition:c DELIM error PARDER  expressions:e CFOR{:
+                                   parser.addError("MISSING MATHE EXPRESSION INSIDE FOR");
+				:}
+                                |
+                                FOR:f PARIZQ inits:i DELIM condition:c DELIM forArthmExp:aE error  expressions:e CFOR{:
+                                  parser.addError("MISSING TOKEN: PARDER FOR");
+				:}
+                                |
+                                FOR:f PARIZQ inits:i DELIM condition:c DELIM forArthmExp:aE PARDER  error CFOR{:
+                                    parser.addError("MISSING/ERROR FOR EXPRESSION");
+				:}
+				;
+
+forArthmExp ::=         ID:id SUMRES:aES1 SUMRES:aES2 {:
+				
+				if(((String)aES1).equals((String)aES2)){
+                                    ForArthmExp r = new ForArthmExp((String)id, (String)aES1, (String)aES2);
+                                    RESULT = r;	
+				}else{
+                                 parser.addError("EXPECTED SAME SING IN FOR ARTH EXP");
+                                 }
+				
+			:}
+			| ID:id SUMRES:aES IGUAL:eq INTEGER:num {:
+				ForArthmExp r = new ForArthmExp((String)id, (String)aES, (String)eq, (int)num);
+			:}
+			| ID:id MULTDIV:aES IGUAL:eq INTEGER:num {:
+				ForArthmExp r = new ForArthmExp((String)id, (String)aES, (String)eq, (int)num);
+			:}
+			;
+
+inits ::= INT:i ID:id AS value:v {:
+			Inits r = new Inits((String)i, (String)id,v);
+			RESULT = r;
+		:}
+		|INT ID error value {:
+			parser.addError("MISSING TOKEN 'AS1'");
+		:}
+		|INT error AS value {:
+			parser.addError("EXPECTED TOKEN ID");
+		:}
+		|INT ID AS error {:
+			parser.addError("EXPECTED VALUE FOR ID");
+		:}
+		;
+
+
+ scanners ::=    READ:sf PARIZQ value:val  PARDER DELIM {:
+				Scanners r= new Scanners((String)sf,val);
+				RESULT = r;
+			:}
+			|READ error value COMMA  PARDER DELIM {:
+				parser.addError("MISSING TOKEN PARIZQ SCANNER'");
+			:}
+			|READ PARIZQ value COMMA  error DELIM {:
+				parser.addError("MISSING TOKEN PARDER SCANNER");
+			:}
+			|READ PARIZQ value COMMA PARDER error {:
+				parser.addError("MISSING TOKEN DELIM '#' SCANNER");
+			:}
+			;
+
+printers ::=            writers:pf PARIZQ value:v PARDER DELIM:s {:
+				Printers r = new Printers((String)pf,v);
+				RESULT = r;
+			:}
+                        |  
+                        writers:pf error value:v PARDER DELIM:s {:
+				parser.addError("MISSING TOKEN: PARIZQ PRINTER");
+			:}
+                        |  
+                        writers:pf PARIZQ error PARDER DELIM:s {:
+				parser.addError("MISSING TOKEN: VALUE PRINTERS");
+			:}
+                        |  
+                        writers:pf PARIZQ value:v error DELIM:s {:
+				parser.addError("MISSING TOKEN: PARDER PRINTERS");
+			:}
+                        |  
+                        writers:pf PARIZQ value:v PARDER error {:
+				parser.addError("MISSING/ERROR NEAR ENDLINE TOKEN '#'");
+			:}
+			;
+
+writers ::=            WRITE {:
+                           RESULT =  "write";
+			:}
+                        | WRITELN{:
+                            RESULT = "writeln";
+			:}
+			;
+
+
+            
+
+opsum ::= SUMRES:op {:
+				if (((String)op).equals("+")) {
+					RESULT = "+";
+                               
+				}else{
+					RESULT = "-";
+                                   
+				}
+                                
+			:}
+			;
+
+opmultdiv ::= MULTDIV:op {:
+				if (((String)op).equals("*")) {
+					RESULT = "*";
+                                        System.out.println(((String)op));
+				}else {
+					RESULT = "/";
+                                        System.out.println(((String)op));
+				}
+                              
+			:}
+			;

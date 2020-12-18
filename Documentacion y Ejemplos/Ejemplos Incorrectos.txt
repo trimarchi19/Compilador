@@ -1,0 +1,76 @@
+EJEMPLO 1
+
+{! Ejemplo de error en símbolo de lógica booleana dentro de un ticif y de falta de condición de un ticif !}
+func void main() =>
+	set int x as #
+	set x as 10#
+	ticif (x=5)
+		write (hola)#
+	else
+		write (adios)#
+		ticif (x==2)
+			write(test)#
+		else
+			ticif
+				write(x)#
+			tacif
+		tacif
+	tacif
+toe
+
+
+EJEMPLO 2
+
+{! Ejemplo de error que muestra falta de la palabra reservada “toe” al final de la función main !}
+
+func void main() =>
+	set char[]x as ['a','b']#
+	set int[][]y as [1,2,3,4,5]#
+	set int z as 3#
+	tic4 (int i as 0#i==10#i++)
+		ticwhile(z==3)
+			set char id#
+			read (id)#	!! Esto es un comentario
+		tacwhile
+		{! Esto es
+		Otro comentario
+		De 
+Parrafo. !}
+	tac4
+
+
+EJEMPLO 3
+
+{! Ejemplo de error de declaración de func al principio, error al cierre del código de bloque switch y falta de tipo de parámetros en las funciones fuera del main. !}
+func void start(bool flagB)#
+func void start(bool flagC)#
+
+func void main() =>
+	set char option#
+	read (option)#
+	tichoose(option)
+	'A':
+		set bool flagA as true#
+		end#
+	'B':	
+		set bool flagB as true#
+		end#
+	'C':
+		set bool flagC as true#
+		end#
+toe
+
+func void start(flagA) =>
+	return 'A'#
+toe
+
+func void start(flagB) =>
+	return 'B'#
+toe
+
+func void start(flagC) =>
+	return 'C'#
+too
+
+
+

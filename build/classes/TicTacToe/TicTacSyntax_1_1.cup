@@ -1,0 +1,1206 @@
+package TicTacToe;
+
+import java_cup.runtime.*;
+import classes.*;
+import java.util.ArrayList;
+import java.lang.reflect.*;
+
+parser code {:
+    public MyNode root = null;
+
+    ArrayList<StringBuilder> errores = new ArrayList();
+    ArrayList<StringBuilder> errores3 = new ArrayList();
+    ArrayList<String> errores2 = new ArrayList();
+
+    @Override
+    public void report_error(String message, Object info) {
+System.out.println(info +"Esto es la info");
+    	StringBuilder m = new StringBuilder("Syntax Error");
+		if (info instanceof java_cup.runtime.Symbol) {
+
+			java_cup.runtime.Symbol s = ((java_cup.runtime.Symbol) info);
+			if (s.left >= 0) {
+				m.append(" at line "+(s.left+1));
+				if (s.right >= 0)
+					m.append(", column "+(s.right+1));
+			}
+			if (s.sym == 0) {
+				m.append(" : Part of declaration (main or function) is missing");
+			}else{
+				m.append(" Unexpected token: "+ getToken(s.sym) +" |"+message);
+			}
+		}
+                errores.add(m);
+       
+    }
+
+    public void addError(String message, Object info) {
+
+
+    	StringBuilder m = new StringBuilder("Syntax Error");
+		if (info instanceof java_cup.runtime.Symbol) {
+			java_cup.runtime.Symbol s = ((java_cup.runtime.Symbol) info);
+			if (s.left >= 0) {
+				m.append(" at line "+(s.left+1));
+				if (s.right >= 0)
+					m.append(", column "+(s.right+1));
+			}
+			if (s.sym == 0) {
+				m.append(" : Part of declaration (main or function) is missing");
+			}else{
+				m.append(" Unexpected token: "+ getToken(s.sym) +" |"+message);
+			}
+		}
+        
+                errores3.add(m);
+    }
+    public void addError(String message) {
+            System.err.println(message);
+                errores2.add(message);
+    }
+
+
+    private String getToken(int id) {
+        try {
+	        Field [] field = sym.class.getFields();
+	        for (int i = 0; i < field.length; i++) {
+	          	if (field[i].getInt(null) == id) {
+	                return field[i].getName();
+	            }
+	            
+	        }
+        } catch (Exception e) {          
+        }
+        return "UNKOWN";
+    }
+    
+
+    public void report_fatal_error(String message, Object info) {
+		//report_error(" Could not recover", info);
+	}
+    
+    @Override
+    public int error_sync_size(){
+        return 2;
+    }
+
+:};
+
+
+
+terminal INT,SET,AS,BOOL,VOID,FUNC,MAIN,WRITE,WRITELN,READ,DELIM,OPENFUNC
+          ,CLOSEFUNC,COMMA,PARIZQ,PARDER,IGUAL,OR,AND,FOR,CFOR,WHILE,CWHILE
+          ,IF,ELSIF,ELSE,CIF,SWITCH,CSWITCH,ENDCASE,DEFCASE,RETURN,BREAK,CASE
+          ,CHAR,SUMRES,MULTDIV,BOOLEX,NULL,BOOLVAL,CHARVAL,ARRAYD,ARRAYDD,INTEGER,ID
+          ,ARRAYDVALC,ARRAYDDVALC,ARRAYDVALI,ARRAYDDVALI;
+
+
+
+
+
+non terminal compilador;
+non terminal mainClause;
+non terminal  functionDeclaration;
+non terminal functionDeclarationL;
+non terminal  functionList;
+non terminal  function;
+non terminal  ParametersList;
+non terminal  Parameters;
+non terminal  argument;
+non terminal  argumentList;
+non terminal  expression;
+non terminal  expressions;
+non terminal  type;
+non terminal  returnStatement;
+non terminal  variableDeclaration;
+non terminal  variableAssign;
+non terminal  statements;
+non terminal  scanners;
+non terminal  printers;
+non terminal  variables;
+non terminal  varDeclList;
+non terminal  value;
+non terminal  ifStatement;
+non terminal  elseStatement;
+non terminal  condition;
+non terminal  whileStatement;
+non terminal  forStatement;
+non terminal  inits;
+non terminal  forArthmExp;
+non terminal  andOr;
+non terminal  arithmeticExp;  
+non terminal  term;
+non terminal  factor;
+non terminal  assignment;
+non terminal  assignmentProc;
+non terminal  opsum;
+non terminal  opmultdiv;
+non terminal  operators;
+non terminal  writers;
+
+non terminal  switchStatement;
+non terminal  cases;
+non terminal  cas;
+
+
+
+precedence left OR;
+precedence nonassoc BOOLEX;
+precedence left SUMRES;
+precedence left MULTDIV;
+precedence left PARIZQ, PARDER;
+precedence right ELSE;
+precedence right ID;
+
+
+start with compilador;
+
+compilador ::= mainClause:mc {:
+                                    MyNode tree = new MyNode("INIT");
+                                    MyNode raiz = new MyNode("RAIZ");
+                                    raiz.addHijo( (MyNode) mc );
+                                    tree.addHijo( raiz );
+                                    parser.root = tree;
+				:}
+                                | functionDeclarationL:fdl mainClause:mc functionList:fl {:
+                                    MyNode tree = new MyNode("INIT");
+                                    MyNode raiz = new MyNode("RAIZ");
+                                    if( !(((MyNode) fdl).value).equals("FUNCTION DECLARATION")){
+                                        MyNode nuevoNodo = new MyNode("FUNCTION DECLARATION");
+                                        nuevoNodo.addHijo((MyNode) fdl);
+                                        raiz.addHijo(nuevoNodo);
+
+                                    }else{
+                                        raiz.addHijo((MyNode) fdl);
+
+                                    }
+
+                                    raiz.addHijo( (MyNode) mc );
+                                    raiz.addHijo((MyNode) fl);
+                                    tree.addHijo( raiz );
+                                    parser.root = tree;
+				:}
+                                |
+                                functionDeclarationL:fdl mainClause:mc  {:
+                                    MyNode tree = new MyNode("INIT");
+                                    MyNode raiz = new MyNode("RAIZ");
+
+                                    if( !(((MyNode) fdl).value).equals("FUNCTION DECLARATION")){
+                                        MyNode nuevoNodo = new MyNode("FUNCTION DECLARATION");
+                                        nuevoNodo.addHijo((MyNode) fdl);
+                                        raiz.addHijo(nuevoNodo);
+
+                                    }else{
+                                        raiz.addHijo((MyNode) fdl);
+
+                                    }
+
+
+                                    
+                                    raiz.addHijo( (MyNode) mc );
+                                    tree.addHijo( raiz );
+                                    parser.root = tree;
+
+				:}
+				|error compilador 
+
+				;
+
+mainClause ::= FUNC type:t MAIN:m PARIZQ argumentList:a PARDER OPENFUNC expressions:e CLOSEFUNC {:
+                                        MyNode append = ((MyNode)t);    
+                                        MyNode nuevoNodo = new MyNode(append.value + " MAIN :");
+
+
+                                        MyNode argumentos;
+                                        if( !(((MyNode) a).value).equals("ARGUMENT LIST")){
+                                            argumentos = new MyNode("ARGUMENT LIST");
+                                            argumentos.addHijo((MyNode) a);
+
+                                        }else{
+                                            argumentos = (MyNode)a;
+                                         }
+                                         MyNode expression;
+                                        if( !(((MyNode) e).value).equals("EXPRESSION")){
+                                            expression = new MyNode("EXPRESSION");
+                                            expression.addHijo((MyNode) e);
+
+                                        }else{
+                                            expression = (MyNode)e;
+                                         }
+
+                                        nuevoNodo.addHijo(argumentos);
+                                        nuevoNodo.addHijo(expression);
+					
+					RESULT = nuevoNodo;
+				:}
+                                |
+                               error:err type:t MAIN:m PARIZQ argumentList:a PARDER OPENFUNC expressions:e CLOSEFUNC {:
+                                   parser.addError("MISSING TOKEN : FUNC" );
+				:}
+                                |
+                               FUNC error:err MAIN:m PARIZQ argumentList:a PARDER OPENFUNC expressions:e CLOSEFUNC {:
+                                   //System.err.println("Expected type before main");
+
+                                   parser.addError("MISSING TOKEN : TYPE");
+
+				:}
+                                |
+                               FUNC type:t error:er PARIZQ argumentList:a PARDER OPENFUNC expressions:e CLOSEFUNC {:
+                                    parser.addError("MISSING TOKEN :  MAIN");
+                                
+				:}
+                                |
+                               FUNC type:t MAIN:m PARIZQ argumentList:a PARDER error:er expressions:e CLOSEFUNC {:
+                                   parser.addError("ERROR NEAR:  OPENFUNC-EXPRESSION");
+                           
+				:}
+
+;
+
+functionDeclarationL ::= functionDeclarationL:fdl functionDeclaration:fd   {:
+                                        MyNode nuevoNodo = new MyNode("FUNCTION DECLARATION");
+                                        nuevoNodo.addHijo((MyNode) fd);
+                                        //System.out.println(fd);
+                                       System.out.println(fdl + "---" + ((MyNode)fdl).getHijos() +"----" +((MyNode)fdl).getHijos().size());
+                                        MyNode functionD = (MyNode) fdl;
+                                        if(functionD.getHijos().size() == 1){
+                                           nuevoNodo.addHijo(functionD);
+                                        }else{
+                                            nuevoNodo.addHijos(functionD.getHijos(),functionD);
+
+                                         }
+                                        System.out.print("---------------------");
+                                         System.out.println(nuevoNodo + "---" + ((MyNode)nuevoNodo).getHijos());
+
+                                         System.out.println("###################################");
+                                         RESULT = nuevoNodo;
+				:}
+				| functionDeclaration:fd {:
+                                        MyNode nuevoNodo = ((MyNode) fd);
+					RESULT = nuevoNodo; 
+				:}
+				;
+
+
+
+functionDeclaration ::=         FUNC type:t ID:id PARIZQ argumentList:a PARDER DELIM {:
+
+                                        MyNode nuevoNodo = (MyNode)t;                                       
+                                        MyNode nuevoNodoHijoID = new MyNode(id.toString());
+
+                                        MyNode argumentos;
+                                        if( !(((MyNode) a).value).equals("ARGUMENT LIST")){
+                                            argumentos = new MyNode("ARGUMENT LIST");
+                                            argumentos.addHijo((MyNode) a);
+
+                                        }else{
+                                            argumentos = (MyNode)a;
+                                         }
+
+
+
+                                        nuevoNodoHijoID.addHijo(argumentos);
+                                        nuevoNodo.addHijo(nuevoNodoHijoID);
+					RESULT = nuevoNodo;
+				:}
+
+				;
+
+
+
+functionList ::= function:f functionList:fl {:
+					
+                                        MyNode nuevoNodo = new MyNode("FUNCTION");
+                                        nuevoNodo.addHijo((MyNode) f);
+                                        nuevoNodo.addHijo((MyNode) fl);
+					RESULT = nuevoNodo;         
+					
+				:}
+				| function:f {:
+					
+                                        MyNode nuevoNodo = new MyNode("FUNCTION");
+                                        nuevoNodo.addHijo((MyNode) f);
+					RESULT = nuevoNodo; 
+				:}
+				;
+
+
+
+function ::= FUNC type:t ID:id PARIZQ argumentList:a PARDER OPENFUNC expressions:e CLOSEFUNC {:
+					MyNode temp = ((MyNode) t);
+                                        MyNode nuevoNodo = new MyNode(temp.value + " " + id.toString() + " ");
+                                        nuevoNodo.addHijo((MyNode) e);
+					RESULT = nuevoNodo;
+				:}
+				|FUNC type error PARIZQ argumentList PARDER OPENFUNC expressions CLOSEFUNC {:
+					 parser.addError("MISSING FUNCTION ID");
+					
+				:}
+				|FUNC error ID PARIZQ argumentList PARDER OPENFUNC expressions CLOSEFUNC {:
+					 parser.addError("MISSING FUNCTION: TYPE");
+					
+				:}
+				|FUNC type ID error argumentList PARDER OPENFUNC expressions CLOSEFUNC {:
+					 parser.addError("MISSING TOKEN : PARIZQ");
+					
+				:}
+				|FUNC type ID PARIZQ argumentList error OPENFUNC expressions CLOSEFUNC {:
+					 parser.addError("MISSING TOKEN NEAR: PARDER/EXPRESSION");
+
+					
+				:}
+				;
+
+
+
+
+argumentList ::= argument:a COMMA argumentList:al {:
+                                        MyNode nuevoNodo = new MyNode("ARGUMENT LIST");
+                                        nuevoNodo.addHijo((MyNode) a);
+
+                                        System.out.println(al + "---" + ((MyNode)al).getHijos() +"----" +((MyNode)al).getHijos().size());
+                                        MyNode ArgumentList = (MyNode) al;
+                                        if(ArgumentList.getHijos().size() == 0){
+                                            nuevoNodo.addHijo(ArgumentList);
+                                          
+                                        }else{
+                                             nuevoNodo.addHijos(ArgumentList.getHijos(),ArgumentList);
+                                            
+                                         }
+                                         System.out.print("---------------------");
+                                         System.out.println(nuevoNodo + "---" + ((MyNode)nuevoNodo).getHijos());
+                                         RESULT = nuevoNodo;
+				:}
+				| argument:a {:
+		                        MyNode nuevoNodo = ((MyNode) a);
+					RESULT = nuevoNodo; 
+				:}
+				|  {:
+					 MyNode nuevoNodo = new MyNode("null");
+                                         RESULT = nuevoNodo;
+				:}
+				;
+
+
+argument ::= type:t ID:id {:
+					MyNode temp = ((MyNode) t);
+					MyNode nuevoNodo = new MyNode(temp.value + "-" + id.toString());
+					RESULT = nuevoNodo;
+				:}
+				| type error {:  
+					System.err.println("MISSING ARGUMENT TYPE/ID");
+				:}
+				;
+
+expressions ::= expression:e expressions:es {:
+
+                                        MyNode nuevoNodo = new MyNode("EXPRESSION");
+                                        MyNode aExpressiones = ((MyNode) es);
+                                        nuevoNodo.addHijo((MyNode) e);
+                                        if(aExpressiones.getHijos().size() == 1){
+                                            nuevoNodo.addHijo(aExpressiones);
+                                        }else{
+                                           nuevoNodo.addHijos(aExpressiones.getHijos(),aExpressiones);
+
+                                         }
+                        
+                                RESULT = nuevoNodo;
+				:}
+				| expression:e {:
+
+                                        MyNode nuevoNodo = ((MyNode) e);
+
+					RESULT = nuevoNodo;
+				:}
+				;
+
+expression ::=                  variableDeclaration:vd {:
+                                        MyNode nuevoNodo = new MyNode("VARIABLE DEC :");
+                                        nuevoNodo.addHijo((MyNode) vd);
+				
+					RESULT = nuevoNodo;
+				:}
+                                |
+                                variableAssign:va {:
+                                        MyNode nuevoNodo = new MyNode("VARIABLE ASSIGN :");
+                                        nuevoNodo.addHijo((MyNode) va);
+				
+					RESULT = nuevoNodo;
+				:}
+
+				| statements:s {:
+                                        MyNode nuevoNodo = new MyNode("STATEMENT");
+                                        nuevoNodo.addHijo((MyNode) s);
+					RESULT = nuevoNodo;
+				:}
+                                | scanners:s {:
+                                        MyNode nuevoNodo = new MyNode("SCANNER");
+                                        nuevoNodo.addHijo((MyNode) s);
+				
+					RESULT = nuevoNodo;
+				:}
+				| printers:p {:
+                                        MyNode nuevoNodo = new MyNode("PRINTER");
+                                        nuevoNodo.addHijo((MyNode) p);
+					
+					RESULT = nuevoNodo;
+				:}
+				| returnStatement:rs {:
+                                        MyNode nuevoNodo = new MyNode("RETURN");
+                                        nuevoNodo.addHijo((MyNode) rs);
+					
+					RESULT = nuevoNodo;
+				:}
+				;
+
+
+
+
+returnStatement ::= RETURN:ret value:val DELIM{:
+                                                MyNode nuevoNodo = new MyNode(val.toString());
+						RESULT = nuevoNodo;
+					:}
+					| RETURN error DELIM{:
+						 parser.addError("MISSING RETURN VALUE");
+						
+					:}
+					| RETURN value error {:
+						parser.addError("MISSING DELIM EXPECTED '#'");
+						
+					:}
+					;
+
+
+variableDeclaration ::=         SET type:t varDeclList:v DELIM {:
+                                        boolean flag = true;
+                                        String message ="";
+                                         //System.out.println("###########################################################################");
+                                         MyNode varDec;
+                                         MyNode nuevoNodo = ((MyNode) t);
+                                        if( !(((MyNode) v).value).equals("VARIABLES")){
+                                           varDec = new MyNode("VARIABLES");
+                                             MyNode temp = ((MyNode)v).hijos.get(0);
+                                             //System.out.println( "ESTA ES EL DATO "+(temp.value)+ "-- "+( (temp.value).contains("null")|| (temp.value).contains("INT")) );
+                                             if(( (temp.value).contains("null") || (temp.value).contains("INT")) && (((MyNode) t).value).equals("int") ){
+                                                //System.out.println("ES ENTERO");
+                                                        
+                                             }else{
+                                                 flag = false;
+                                                 message = message + "-" + "Se esperaba tipo "+((MyNode) t).value+" en la variable: "+((MyNode)v).value;
+                                             }
+                                             // System.out.println(message);
+                                            
+                                            if(!flag){
+                                                parser.addError(message);
+                                            }
+                                             varDec.addHijo((MyNode)v);
+                                             nuevoNodo.addHijo((MyNode) varDec);
+
+                                        }else{
+                                            //System.out.println("###########################################################################");
+                                                 //System.out.println("NOT TEMP:  "+((MyNode)v).value);
+                                                 //System.out.println("NOT TEMP:  "+((MyNode)v).hijos);
+                                            for (int i = 0; i < ((MyNode)v).hijos.size(); i++) {
+                                                MyNode temp = ((MyNode)v).hijos.get(i).hijos.get(0);
+                                               // System.out.println("TEMP:  "+temp.value);
+                                                if(( (temp.value).contains("null")|| (temp.value).contains("INT")) && (((MyNode) t).value).equals("int") ){
+                                                    //System.out.println("ES ENTERO");
+                                                        
+                                                }else{
+                                                    flag = false;
+                                                    message = message + "-" + "Se esperaba tipo "+((MyNode) t).value+" en la variable: "+(((MyNode)v)).hijos.get(i).value;
+                                                }
+                                                //System.out.println(message);
+                                            }
+                                                varDec = (MyNode)v;
+                                                nuevoNodo.addHijo((MyNode) varDec);
+                                            if(!flag){
+                                                parser.addError(message);
+                                            }
+                                         }
+
+
+                                    RESULT = nuevoNodo;
+                                :}
+                                |
+                                SET error varDeclList:v DELIM {:
+                                parser.addError("EXPECTED TYPE IN VARIABLE DECLARATION");	
+                
+                            
+                                :}
+                                |
+                                SET type:t error DELIM {:
+                                parser.addError("EXPECTED VARIABLE DECLARATION");	
+         
+                            
+                                :}
+                                ;
+
+
+variableAssign ::=       varDeclList:v DELIM{:
+                                    MyNode nuevoNodo = ((MyNode) v);
+                                    RESULT = nuevoNodo;
+					 RESULT = v;
+                                :}
+
+				;
+
+
+varDeclList ::=                variables:var COMMA  varDeclList:vars  {:
+                                         MyNode nuevoNodo = new MyNode("VARIABLES");
+                                        MyNode left = ((MyNode)var);
+                                        MyNode right = ((MyNode)vars);
+                                        nuevoNodo.addHijo(left);
+                                        if(right.getHijos().size() == 1){
+                                            nuevoNodo.addHijo(right);
+                                        }else{
+                                           nuevoNodo.addHijos(right.getHijos(),right);
+
+                                         }
+					RESULT = nuevoNodo;
+
+
+
+				:}
+				| variables:vars {:
+                                        MyNode nuevoNodo = ((MyNode) vars);
+					RESULT = nuevoNodo;
+				:}
+                                |
+                               variables:vars error  varDeclList:v  {:
+					parser.addError("EXPECTED SEPARATOR ',' IN VARIABLE DECLARATION");
+				:}
+				;
+
+
+
+variables ::=                   ID:id  assignmentProc:a {:
+                                        MyNode nuevoNodo = new MyNode(id.toString());
+                                        MyNode temp = (MyNode) a;
+                                        nuevoNodo.addHijo((MyNode) a);
+					RESULT = nuevoNodo;
+                                         
+				:}
+                                
+			  	;
+
+assignmentProc ::= AS assignment:a {:
+                                                MyNode nuevoNodo = ((MyNode) a);
+						RESULT = nuevoNodo;
+					:}
+					| {:
+                                                 MyNode nuevoNodo = new MyNode("null");
+						RESULT = nuevoNodo;
+					:}
+					;
+
+assignment ::= arithmeticExp:aE {:
+                                        MyNode nuevoNodo = ((MyNode) aE);
+					RESULT = nuevoNodo;
+				:}
+				;
+
+arithmeticExp ::= arithmeticExp:e opsum:opsum term:t {:
+                                    if((((MyNode)e).value).contains("INT")  && (((MyNode)t).value).contains("INT")){
+					 if ((((MyNode)opsum).value).equals("+")) {
+                                                        System.out.println("SUMAAA");
+                                                        MyNode nuevoNodo = new MyNode(((MyNode)e).value +" + "+((MyNode)t).value);
+                                                        
+							RESULT = nuevoNodo;
+						}else  {
+                                                        System.out.println("RESTAAAAAAA");
+                                                        MyNode nuevoNodo = new MyNode(((MyNode)e).value +" - "+((MyNode)t).value);
+							RESULT = nuevoNodo;
+                                           } 
+					}else{
+                                              parser.addError("ERROR: OPERACION ARITMETICA SOLO SE PUEDE HACER CON TIPO ENTERO");  
+                                         }
+					:}
+					|term:t {:
+                                                MyNode nuevoNodo = ((MyNode) t);
+
+						RESULT = nuevoNodo;
+					:}
+					;
+
+
+term ::= term:t opmultdiv:op factor:f {:
+                        if((((MyNode)t).value).contains("INT")  && (((MyNode)f).value).contains("INT")){
+    				if ((((MyNode)op).value).equals("*")) {
+                                
+                                      MyNode nuevoNodo = new MyNode(((MyNode)t).value +" * "+((MyNode)f).value);
+                                      System.out.println("HOLAAAAAAAAAAAAA MULT");
+                                      RESULT = nuevoNodo;
+				}else if ((((MyNode)op).value).equals("/")) {
+                                      MyNode nuevoNodo = new MyNode(((MyNode)t).value +" * "+((MyNode)f).value);
+                                      System.out.println("HOLAAAAAAAAAAAAA DIV");
+                                      RESULT = nuevoNodo;
+				}
+                        }else{
+                            parser.addError("ERROR: OPERACION ARITMETICA SOLO SE PUEDE HACER CON TIPO ENTERO");  
+                        }
+			:}
+
+			| factor:f {:
+                                MyNode nuevoNodo = ((MyNode) f);
+				RESULT = nuevoNodo;
+			:}
+			;
+
+
+factor ::= PARIZQ arithmeticExp:e PARDER {:
+                   MyNode nuevoNodo = new MyNode("("+((MyNode) e).value+")");
+			        RESULT = nuevoNodo;
+			:}
+			|value:val {:
+                                MyNode nuevoNodo = ((MyNode) val);
+				RESULT = nuevoNodo;
+			:}
+			;
+
+
+
+
+
+
+value ::=               INTEGER:num {:
+                                MyNode nuevoNodo = new MyNode("INT:" + num.toString());
+				RESULT = nuevoNodo;
+			:}
+			|ID:id {:
+				MyNode nuevoNodo = new MyNode("ID:" + id.toString());
+                               
+				RESULT = nuevoNodo;
+			:}
+			|ID:id PARIZQ ParametersList:pl PARDER{:
+				MyNode nuevoNodo = new MyNode("FUNTION:" + id.toString() +" - PARAMETERS:"+((MyNode)pl).value);
+                               
+				RESULT = nuevoNodo;
+			:}
+
+			|CHARVAL:character {:
+				MyNode nuevoNodo = new MyNode("CHAR:" + character.toString());
+                           
+				RESULT = nuevoNodo;
+			:}
+			|BOOLVAL:tF {:
+				MyNode nuevoNodo = new MyNode("BOOL:" + tF.toString());
+
+				RESULT = nuevoNodo;
+			:}
+                        |ARRAYDVALC:advalC{:
+				MyNode nuevoNodo = new MyNode("CHAR_ARRAY:" + advalC.toString());
+                            
+				RESULT = nuevoNodo;
+
+			:}
+                        |ARRAYDDVALC:addvalC{:
+				MyNode nuevoNodo = new MyNode("CHAR_MATRIX:" + addvalC.toString());
+                               
+				RESULT = nuevoNodo;
+			:}
+                        |ARRAYDVALI:advalI{:
+				MyNode nuevoNodo = new MyNode("INT_ARRAY:" + advalI.toString());
+                               
+				RESULT = nuevoNodo;
+			:}
+                        |ARRAYDDVALI:addvalI{:
+				MyNode nuevoNodo = new MyNode("INT_MATRIX:" + addvalI.toString());
+
+				RESULT = nuevoNodo;
+			:}
+
+
+
+			|NULL:n {:
+				MyNode nuevoNodo = new MyNode("NULL " + n.toString());
+                               
+				RESULT = nuevoNodo;
+			:}
+			;
+
+type ::=        INT:i {:
+			MyNode nuevoNodo = new MyNode("int");
+                        RESULT = nuevoNodo;
+		:}
+		| CHAR:c {:
+                        
+			MyNode nuevoNodo = new MyNode("char");
+                        RESULT = nuevoNodo;
+		:}
+		| ARRAYD:ad {:
+                        System.out.println(ad);
+			MyNode nuevoNodo = new MyNode("array1d:"+(String)ad);
+                        RESULT = nuevoNodo;
+		:}
+		| ARRAYDD:add {:
+                        System.out.println(add);
+			MyNode nuevoNodo = new MyNode("array2d:"+(String)add);
+                        RESULT = nuevoNodo;
+		:}
+		| BOOL:b {:
+			MyNode nuevoNodo = new MyNode("bool");
+                        RESULT = nuevoNodo;
+		:}
+		| VOID:v {:
+			MyNode nuevoNodo = new MyNode("void");
+                        RESULT = nuevoNodo;
+		:}
+		;
+
+
+ParametersList ::= Parameters:a COMMA ParametersList:al {:
+                                        MyNode nuevoNodo = new MyNode(((MyNode)a).value +","+((MyNode)al).value);
+                                         RESULT = nuevoNodo;
+				:}
+				| Parameters:a {:
+		                        MyNode nuevoNodo = ((MyNode) a);
+					RESULT = nuevoNodo; 
+				:}
+				|  {:
+					 MyNode nuevoNodo = new MyNode("null");
+                                         RESULT = nuevoNodo;
+				:}
+				;
+
+
+Parameters ::=  value:v{:
+
+					RESULT = (MyNode)v;
+				:}
+                                
+				;
+
+
+
+statements ::=                  ifStatement:ifs 	{: 
+					RESULT = (MyNode)ifs; 
+				:}	
+				|whileStatement:wS {:
+					
+					RESULT = (MyNode)wS;
+				:}
+				|forStatement:fS {:
+				
+					RESULT = (MyNode)fS;	
+				:} 
+                                |
+                                   switchStatement:sS {:
+					
+					RESULT = (MyNode)sS;
+				:}
+				;
+
+switchStatement ::=             SWITCH:i PARIZQ ID:id PARDER cases:cS CSWITCH:cl{:
+
+
+                                    MyNode nuevoNodo = new MyNode("TACCHOOSE");
+                                    nuevoNodo.addHijo(new MyNode(id.toString()));
+                                    nuevoNodo.addHijo((MyNode) cS);
+                                    RESULT = nuevoNodo;
+				:}
+                                |
+                                SWITCH:i error ID:id PARDER cases:cS CSWITCH:cl{:
+					parser.addError("MISSING PARIZQ SWITCH");
+   
+				:}
+                                |
+                                SWITCH:i PARIZQ error PARDER cases:cS CSWITCH:cl{:
+					parser.addError("MISSING SWITCH ID");
+				:}
+                                |
+                                SWITCH:i PARIZQ ID:id error cases:cS CSWITCH:cl{:
+					parser.addError("ERROR NEAR SWITCH-CASE:  PARDER-EXPRESSION");
+				:}
+                                ;
+
+
+cases ::=  cas:c cases:cs {:
+                                        MyNode nuevoNodo = ((MyNode)c);
+                                        nuevoNodo.addHijo((MyNode) cs);
+					RESULT = nuevoNodo;
+				:}
+				| cas:c {:
+                                        MyNode nuevoNodo = ((MyNode) c);
+					
+					RESULT = nuevoNodo;
+				:}
+				;
+
+
+
+
+cas ::=                     value:vl CASE:ca expressions:es ENDCASE:en DELIM {:
+
+                        MyNode nuevoNodo = new MyNode("SWITCH");
+                        nuevoNodo.addHijo(new MyNode(vl.toString()));
+                        nuevoNodo.addHijo((MyNode) es);
+                        RESULT = nuevoNodo; 
+				:}
+				;
+
+ifStatement ::=                 IF:i PARIZQ condition:c PARDER expressions:e CIF{:
+
+                                MyNode nodoNuevo = new MyNode("TICIF :");
+                                MyNode hijo = ((MyNode) c);
+                                //MyNode hijo2 = ((MyNode) e);
+                                nodoNuevo.addHijo(hijo);
+                                //nodoNuevo.addHijo(hijo2);
+
+                                    if( !(((MyNode) e).value).equals("EXPRESSION")){
+                                        MyNode nuevoNodoExp = new MyNode("EXPRESSION");
+                                        nuevoNodoExp.addHijo((MyNode) e);
+                                       nodoNuevo.addHijo(nuevoNodoExp);
+
+                                    }else{
+                                    nodoNuevo.addHijo((MyNode) e);
+
+                                    }
+
+
+				RESULT = nodoNuevo;
+				:}
+                                |IF:i PARIZQ condition:c PARDER expressions:e elseStatement:eS CIF{:
+
+
+                                    MyNode nodoNuevo = new MyNode("TICIF :");
+                                    MyNode hijo = ((MyNode) c);
+                                    nodoNuevo.addHijo(hijo);
+
+                                    if( !(((MyNode) e).value).equals("EXPRESSION")){
+                                        MyNode nuevoNodoExp = new MyNode("EXPRESSION");
+                                        nuevoNodoExp.addHijo((MyNode) e);
+                                       nodoNuevo .addHijo(nuevoNodoExp);
+
+                                    }else{
+                                    nodoNuevo .addHijo((MyNode) e);
+
+                                    }
+                                    MyNode hijo3 = ((MyNode) eS);
+
+                                    nodoNuevo.addHijo(hijo3);
+                                    RESULT = nodoNuevo;
+                                :}
+				| IF:i error condition:c PARDER expressions:e CIF{:
+					parser.addError("MISSING TOKEN: PARIZQ IF");
+
+				:}
+				| IF:i PARIZQ error PARDER expressions:e CIF{:
+					parser.addError("MISSING IF CONDITION");
+
+				:}
+				| IF:i PARIZQ condition:c error expressions:e CIF{:
+					parser.addError("ERROR NEAR IF:  PARDER-EXPRESSION ");
+
+				:}
+
+
+
+;
+
+elseStatement ::= ELSE:eS expressions:e {: 
+					MyNode nodoNuevo = new MyNode("TICELSE :");
+                                    if( !(((MyNode) e).value).equals("EXPRESSION")){
+                                        MyNode nuevoNodoExp = new MyNode("EXPRESSION");
+                                       nuevoNodoExp.addHijo((MyNode) e);
+                                       nodoNuevo.addHijo(nuevoNodoExp);
+
+                                    }else{
+                                        nodoNuevo.addHijo((MyNode) e);
+
+                                    }
+					RESULT = nodoNuevo;
+				:}
+                                 ;
+
+condition ::=           
+                        PARIZQ condition:c PARDER {:
+                                MyNode nuevoNodo = new MyNode("("+((MyNode) c).value+")");
+				RESULT = nuevoNodo;
+			:}
+                        |
+                        PARIZQ condition:c PARDER andOr:aO{:
+                                MyNode nuevoNodo = new MyNode("("+((MyNode) c).value+") "+((MyNode)aO).value);
+				RESULT = nuevoNodo;
+			:}
+                        |
+                        value:v1 operators:b value:v2 {:
+                                MyNode app1 = ((MyNode)v1);
+                                MyNode app2 = ((MyNode)v2);
+                                MyNode nodoNuevo = new MyNode(app1.value + " " + (String)b + " " + app2.value);
+				RESULT = nodoNuevo;
+			:}
+			| value:v1 operators:b value:v2 andOr:aO {:
+                                MyNode app1 = ((MyNode)v1);
+                                MyNode app2 = ((MyNode)v2);
+                                MyNode nodoNuevo = new MyNode(app1.value + " " + (String)b + " " + app2.value +" "+ ((MyNode)aO).value);
+				RESULT = nodoNuevo;
+
+                                //RESULT = "";
+				//Condition r = new Condition(v1,(String)b,v2,aO);
+				//RESULT = r;
+			:}
+			| value operators error{:
+                                System.out.println("HMMMM111111111111111111111");
+				parser.addError("EXPECTED FINAL CONDITION VALUE");
+
+			:}
+			| value error value{:
+				parser.addError("EXPECTED CONDITION VALUE");
+
+			:}
+			;
+
+operators ::= BOOLEX:b {:
+
+				if (((String)b).equals("<")) {
+					RESULT = "<";
+				}else if (((String)b).equals(">")) {
+					RESULT = ">";
+				}else if (((String)b).equals("<=")) {
+					RESULT = "<=";
+				}else if (((String)b).equals(">=")) {
+					RESULT = ">=";
+				}else if (((String)b).equals("!=")) {
+					RESULT = "!=";
+				}else if (((String)b).equals("==")) {
+					RESULT = "==";
+				}else{
+					
+				}
+
+			:}
+			;
+
+andOr ::=       AND:a condition:c {:
+			MyNode nuevoNodo = new MyNode((String) a + " " + ((MyNode)c).value);
+                        //MyNode hijo = ((MyNode) c);
+                        //nuevoNodo.addHijo(hijo);
+                        RESULT = nuevoNodo ;
+		:}
+		| OR:o condition:c {:
+			MyNode nuevoNodo = new MyNode((String) o + " " + ((MyNode)c).value);
+                        //MyNode hijo = ((MyNode) c);
+                        //nuevoNodo.addHijo(hijo);
+                        RESULT = nuevoNodo ;
+		:}
+		;
+
+whileStatement ::=              WHILE:w PARIZQ condition:c PARDER expressions:e CWHILE {:
+                                    MyNode nuevoNodo = new MyNode("TICWHILE");
+                                    MyNode hijo = ((MyNode) c);
+                                    nuevoNodo.addHijo(hijo);
+
+                                    if( !(((MyNode) e).value).equals("EXPRESSION")){
+                                        MyNode nuevoNodoExp = new MyNode("EXPRESSION");
+                                       nuevoNodoExp.addHijo((MyNode) e);
+                                       nuevoNodo.addHijo(nuevoNodoExp);
+
+                                    }else{
+                                     nuevoNodo.addHijo((MyNode) e);
+
+                                    }
+
+                                    RESULT = nuevoNodo ;
+				:}
+				|WHILE:w error condition:c PARDER expressions:e CWHILE {:
+					parser.addError("MISSING TOKEN: PARIZQ WHILE");
+				:}
+				|WHILE:w PARIZQ error PARDER expressions:e CWHILE {:
+					parser.addError("MISSING WHILE CONDITION");
+				:}
+				|WHILE:w PARIZQ condition:c error expressions:e CWHILE {:
+					parser.addError("MISSING TOKEN: PARDER WHILE ");
+				:}
+				|WHILE:w PARIZQ condition:c PARDER error CWHILE {:
+					parser.addError("MISSING/ERROR WHILE EXPRESSION");
+				:}
+				;
+
+forStatement ::= FOR:f PARIZQ inits:i DELIM condition:c DELIM forArthmExp:aE PARDER  expressions:e CFOR{:
+                                    MyNode nuevoNodo = new MyNode("TICFOR");
+                                    MyNode hijo = ((MyNode)i);
+                                    MyNode hijo2 = ((MyNode)c);
+                                    MyNode hijo3 = ((MyNode)aE);
+
+                                    nuevoNodo.addHijo(hijo);
+                                    nuevoNodo.addHijo(hijo2);
+                                    nuevoNodo.addHijo(hijo3);
+
+                                    if( !(((MyNode) e).value).equals("EXPRESSION")){
+                                        MyNode nuevoNodoExp = new MyNode("EXPRESSION");
+                                       nuevoNodoExp.addHijo((MyNode) e);
+                                       nuevoNodo.addHijo(nuevoNodoExp);
+
+                                    }else{
+                                     nuevoNodo.addHijo((MyNode) e);
+
+                                    }
+
+
+                                    RESULT = nuevoNodo;
+
+				:}
+                                |
+                                FOR:f error inits:i DELIM condition:c DELIM forArthmExp:aE PARDER  expressions:e CFOR{:
+                                   parser.addError("MISSING TOKEN: PARIZQ FOR");
+				:}
+                                |
+                                FOR:f PARIZQ error DELIM condition:c DELIM forArthmExp:aE PARDER  expressions:e CFOR{:
+                                 parser.addError("MISSING INIT IN FOR");
+				:}
+                                |
+                                FOR:f PARIZQ inits:i error condition:c DELIM forArthmExp:aE PARDER  expressions:e CFOR{:
+                                 parser.addError("MISSING  DELIM INSIDE FOR");
+				:}
+                                |
+                                FOR:f PARIZQ inits:i DELIM error DELIM forArthmExp:aE PARDER  expressions:e CFOR{:
+                                    parser.addError("MISSING CONDITION INSIDE FOR");
+				:}
+                                |
+                                FOR:f PARIZQ inits:i DELIM condition:c error forArthmExp:aE PARDER  expressions:e CFOR{:
+                                   parser.addError("MISSING DELIM INSIDE FOR");
+				:}
+                               |
+                                FOR:f PARIZQ inits:i DELIM condition:c DELIM error PARDER  expressions:e CFOR{:
+                                   parser.addError("MISSING MATHE EXPRESSION INSIDE FOR");
+				:}
+                                |
+                                FOR:f PARIZQ inits:i DELIM condition:c DELIM forArthmExp:aE error  expressions:e CFOR{:
+                                  parser.addError("MISSING TOKEN: PARDER FOR");
+				:}
+                                |
+                                FOR:f PARIZQ inits:i DELIM condition:c DELIM forArthmExp:aE PARDER  error CFOR{:
+                                    parser.addError("MISSING/ERROR FOR EXPRESSION");
+				:}
+				;
+
+forArthmExp ::=         ID:id SUMRES:aES1 SUMRES:aES2 {:
+				
+				if(((String)aES1).equals((String)aES2)){
+                                    MyNode app1 = new MyNode(id.toString());
+                                    MyNode nuevoNodo = new MyNode(app1.value + aES1.toString() + aES2.toString());
+                                    RESULT = nuevoNodo;	
+				}else{
+                                 parser.addError("EXPECTED SAME SING IN FOR ARTH EXP");
+                                 }
+				
+			:}
+			| ID:id SUMRES:aES IGUAL:eq INTEGER:num {:
+				ForArthmExp r = new ForArthmExp((String)id, (String)aES, (String)eq, (int)num);
+			:}
+			| ID:id MULTDIV:aES IGUAL:eq INTEGER:num {:
+				ForArthmExp r = new ForArthmExp((String)id, (String)aES, (String)eq, (int)num);
+			:}
+			;
+
+inits ::= INT:i ID:id AS value:v {:
+                                    MyNode temp =new MyNode(id.toString());
+                                    MyNode nuevoNodo = new MyNode(i.toString() + temp.value);
+                                    RESULT = nuevoNodo;	
+		:}
+		|INT ID error value {:
+			parser.addError("MISSING TOKEN 'AS1'");
+		:}
+		|INT error AS value {:
+			parser.addError("EXPECTED TOKEN ID");
+		:}
+		|INT ID AS error {:
+			parser.addError("EXPECTED VALUE FOR ID");
+		:}
+		;
+
+
+ scanners ::=    READ:sf PARIZQ value:val  PARDER DELIM {:
+                                    MyNode nuevoNodo = new MyNode("READ");
+                                    MyNode temp =((MyNode)val);
+                                    nuevoNodo.addHijo(temp);
+                                    RESULT = nuevoNodo;
+			:}
+			|READ error value COMMA  PARDER DELIM {:
+				parser.addError("MISSING TOKEN PARIZQ SCANNER'");
+			:}
+			|READ PARIZQ value COMMA  error DELIM {:
+				parser.addError("MISSING TOKEN PARDER SCANNER");
+			:}
+			|READ PARIZQ value COMMA PARDER error {:
+				parser.addError("MISSING TOKEN DELIM '#' SCANNER");
+			:}
+			;
+
+printers ::=           WRITE PARIZQ value:v PARDER DELIM:s {:
+				MyNode nuevoNodo = new MyNode("WRITE");
+                                MyNode temp =((MyNode)v);
+                                nuevoNodo.addHijo(temp);
+                                RESULT = nuevoNodo;
+			:}
+                        | 
+                        WRITELN PARIZQ value:v PARDER DELIM:s {: 
+                            MyNode nuevoNodo = new MyNode("WRITELN");
+                                MyNode temp =((MyNode)v);
+                                 nuevoNodo.addHijo(temp);
+                                    RESULT = nuevoNodo;
+
+                        :}|
+
+                         WRITE PARIZQ arithmeticExp:e PARDER DELIM:s {:
+				MyNode nuevoNodo = new MyNode("WRITE");
+                                MyNode temp =((MyNode)e);
+                                nuevoNodo.addHijo(temp);
+                                RESULT = nuevoNodo;
+			:}
+                        | 
+                        WRITELN PARIZQ arithmeticExp:e PARDER DELIM:s {: 
+                            MyNode nuevoNodo = new MyNode("WRITELN");
+                                MyNode temp =((MyNode)e);
+                                 nuevoNodo.addHijo(temp);
+                                    RESULT = nuevoNodo;
+
+                        :}|
+ 
+                        writers:pf error value:v PARDER DELIM:s {:
+				parser.addError("MISSING TOKEN: PARIZQ PRINTER");
+			:}
+                        |  
+                        writers:pf PARIZQ error PARDER DELIM:s {:
+				parser.addError("MISSING TOKEN: VALUE PRINTERS");
+			:}
+                        |  
+                        writers:pf PARIZQ value:v error DELIM:s {:
+				parser.addError("MISSING TOKEN: PARDER PRINTERS");
+			:}
+                        |  
+                        writers:pf PARIZQ value:v PARDER error {:
+				parser.addError("MISSING/ERROR NEAR ENDLINE TOKEN '#'");
+			:}
+			;
+
+
+
+            
+
+opsum ::= SUMRES:op {:
+				if (((String)op).equals("+")) {
+                                        MyNode nuevoNodo = new MyNode("+");
+                                        RESULT = nuevoNodo;
+                               
+				}else{
+                                        MyNode nuevoNodo = new MyNode("-");
+                                        RESULT = nuevoNodo;
+                                   
+				}
+                                
+			:}
+			;
+
+opmultdiv ::= MULTDIV:op {:
+				if (((String)op).equals("*")) {
+					MyNode nuevoNodo = new MyNode("*");
+                                        RESULT = nuevoNodo;
+				}else {
+					MyNode nuevoNodo = new MyNode("/");
+                                        RESULT = nuevoNodo;
+				}
+                              
+			:}
+			;

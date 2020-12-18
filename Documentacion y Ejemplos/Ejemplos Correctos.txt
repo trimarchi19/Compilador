@@ -1,0 +1,70 @@
+EJEMPLO 1
+
+func void main() =>
+	set int x as 5#
+	ticif (x > 5)
+		write (hola)#
+	else
+		write (adios)#
+		ticif (x < 2)
+			write(test)#
+		else
+			ticif (x==1)
+				write(x)#
+			tacif
+			
+		tacif
+	tacif
+toe
+
+EJEMPLO 2
+
+func void main() =>
+	set char[]x as ['a','b']#
+	set int[][]y as [1,2,3,4,5]#
+	set int z as 3#
+	tic4 (int i as 0#i==10#i++)
+		ticwhile(z==3)
+			set char id#
+			read (id)#	!! Esto es un comentario
+		tacwhile
+		{! Esto es
+		Otro comentario
+		De 
+Parrafo. !}
+	tac4
+toe
+
+EJEMPLO 3
+
+func void startA(bool flagA)#
+func void startB(bool flagB)#
+func void startC(bool flagC)#
+
+func void main() =>
+	set char option#
+	read (option)#
+	tichoose(option)
+	'A':
+		set bool flagA as true#
+		end#
+	'B':	
+		set bool flagB as true#
+		end#
+	'C':
+		set bool flagC as true#
+		end#
+	tachoose
+toe
+
+func void startA(bool flagA) =>
+	return 'A'#
+toe
+
+func void startB(bool flagB) =>
+	return 'B'#
+toe
+
+func void startC(bool flagC) =>
+	return 'C'#
+toe
