@@ -3,14 +3,10 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/Daniel/Downloads/PC/ProyectoComipladores1/src/TicTacToe/GUI.java</file>
-            <file>file:/C:/Users/Daniel/Downloads/PC/ProyectoComipladores1/src/TicTacToe/SymbolT.java</file>
-            <file>file:/C:/Users/Daniel/Downloads/PC/ProyectoComipladores1/src/TicTacToe/SymbolTable.java</file>
-            <file>file:/C:/Users/Daniel/Downloads/PC/ProyectoComipladores1/src/TicTacToe/TicTacCompiler.java</file>
-            <file>file:/C:/Users/Daniel/Downloads/PC/ProyectoComipladores1/src/TicTacToe/FileCompiler.java</file>
-            <file>file:/C:/Users/Daniel/Downloads/PC/ProyectoComipladores1/src/TicTacToe/TicTacSyntax_1.cup</file>
-            <file>file:/C:/Users/Daniel/Downloads/PC/ProyectoComipladores1/src/TicTacToe/TicTacFlex.flex</file>
-            <file>file:/C:/Users/Daniel/Downloads/PC/ProyectoComipladores1/src/TicTacToe/sym.java</file>
+            <file>file:/C:/Users/andre/Desktop/Compilador/src/TicTacToe/GUI.java</file>
+            <file>file:/C:/Users/andre/Desktop/Compilador/src/TicTacToe/CuadrupleTable.java</file>
+            <file>file:/C:/Users/andre/Desktop/Compilador/src/TicTacToe/MyTree.java</file>
+            <file>file:/C:/Users/andre/Desktop/Compilador/src/TicTacToe/Cuadruple.java</file>
         </group>
     </open-files>
 </project-private>
