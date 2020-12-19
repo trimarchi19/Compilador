@@ -12,6 +12,10 @@ public class Cuadruple {
         this.arg2 = arg2;
         this.res = res;
     }
+
+    Cuadruple(int indice, String op, String arg1, String resultado) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
     
     public String getOp() {
         return op;
