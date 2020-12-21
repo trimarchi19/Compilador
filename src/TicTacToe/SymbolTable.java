@@ -93,7 +93,7 @@ public class SymbolTable {
     public boolean searchSymbol(String value) {
         boolean found = false;
         System.out.println(Padre);
-        for (int i = 0; i < SymbolTable.size(); i++) {
+        for (int i = SymbolTable.size()-1; i >=0; i--) {
             SymbolT temp = SymbolTable.get(i);
             if ((temp.name).equals(value)) {
                 return true;
@@ -109,7 +109,7 @@ public class SymbolTable {
     public boolean searchSymbolEnAmbito(String value) {
         boolean found = false;
         System.out.println(Padre);
-        for (int i = 0; i < SymbolTable.size(); i++) {
+        for (int i = SymbolTable.size()-1; i >=0; i--) {
             SymbolT temp = SymbolTable.get(i);
             if ((temp.name).equals(value)) {
                 return true;
@@ -118,7 +118,32 @@ public class SymbolTable {
         return false;
 
     }
+    public SymbolT getSymbolInTree(String value) {
+        System.out.println(Padre);
+        for (int i = SymbolTable.size()-1; i >=0; i--) {
+            SymbolT temp = SymbolTable.get(i);
+            if ((temp.name).equals(value)) {
+                return temp;
+            }
+        }
+        if (!(Padre == null)) {
+            return Padre.getSymbolInTree(value);
+        } else {
+             return null;
+        }
 
+    }
+    public SymbolT getSymbolInAmbito(String value) {
+
+        System.out.println(Padre);
+        for (int i = SymbolTable.size()-1; i >=0; i--) {
+            SymbolT temp = SymbolTable.get(i);
+            if ((temp.name).equals(value)) {
+                return temp;
+            }
+        }
+        return null;
+    }
 
     public void Imprimir(){
         System.out.println("------------------------------------");

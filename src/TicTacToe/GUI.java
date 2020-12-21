@@ -47,6 +47,8 @@ public class GUI extends javax.swing.JFrame {
 
     public SymbolTable Table = new SymbolTable("RAIZ");
     public int Offset = 0;
+    public Sintax s;
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -230,15 +232,17 @@ public class GUI extends javax.swing.JFrame {
 
     private void btSinActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btSinActionPerformed
         // TODO add your handling code here:
+        SymbolTable Table = new SymbolTable("RAIZ");
+        Offset = 0;
         String ST = txtInput.getText();
-        Sintax s = new Sintax(new TicTacToe.TicTacCompiler(new StringReader(ST)));
+        s = new Sintax(new TicTacToe.TicTacCompiler(new StringReader(ST)));
 
         try {
             s.parse();
             txtSintactico.setText("Analisis realizado correctamente");
             txtSintactico.setForeground(new Color(25, 111, 61));
             txtSintactico.setForeground(Color.red);
-            String acum = "";
+            /* String acum = "";
 
             ArrayList<StringBuilder> errores = s.errores;
             ArrayList<String> errores2 = s.errores2;
@@ -253,7 +257,9 @@ public class GUI extends javax.swing.JFrame {
                 System.out.println(sym.toString());
 
             }
-            txtSintactico.setText(acum);
+             */
+            llenarLogErrores();
+            //txtSintactico.setText(acum);
             analizarLexico();
             cargarArbol(s.root);
             llenarTablaSymbolos(s.root, Table, 0);
@@ -264,6 +270,26 @@ public class GUI extends javax.swing.JFrame {
         }
 
     }//GEN-LAST:event_btSinActionPerformed
+
+    private void llenarLogErrores() {
+        String acum = "";
+
+        ArrayList<StringBuilder> errores = s.errores;
+        ArrayList<String> errores2 = s.errores2;
+        //System.out.println("Errores" + s.errores.size());
+        for (StringBuilder sym : errores) {
+            acum = acum + "\n" + sym;
+            System.out.println(sym);
+        }
+        acum = acum + "\n" + "--------------------------------------------";
+        for (String sym : errores2) {
+            acum = acum + "\n" + sym.toString();
+            System.out.println(sym.toString());
+
+        }
+        txtSintactico.setText(acum);
+
+    }
 
     private void cargarArbol(MyNode raiz) throws IOException {
 
@@ -286,9 +312,29 @@ public class GUI extends javax.swing.JFrame {
                 System.out.println("TRUE");
                 SymT = buscarDec(hijo, SymT);
 
+            } else if ("VARIABLE ASSIGN :".equals(hijo.value)) {
+                System.out.println("TRUE es UN ASSING");
+                SymT = VarAssign(hijo, SymT);
+
+            } else if ("TICIF :".equals(hijo.value)) {
+                System.out.println("TRUE es UN IF");
+
+                SymT = Condition(hijo, SymT, 0, "IF");
+
+            } else if ("TICWHILE".equals(hijo.value)) {
+                System.out.println("TRUE es UN WHILE");
+                SymT = Condition(hijo, SymT, 0, "WHILE");
+
+            } else if ("TICFOR".equals(hijo.value)) {
+                System.out.println("..." + hijo.getHijos().get(0));
+
+                System.out.println("TRUE es UN TICFOR");
+                SymT = ForDec(hijo, SymT);
+                SymT = Condition(hijo, SymT, 1, "FOR");
+
             } else if ("EXPRESSION".equals(hijo.value)) {
                 //System.out.println(SymT.name);
-                SymbolTable TablaHijo = new SymbolTable("Hijo" + nivel, SymT,Offset);
+                SymbolTable TablaHijo = new SymbolTable("Hijo" + nivel, SymT, Offset);
                 TablaHijo = llenarTablaSymbolos(hijo, TablaHijo, nivel + 1);
                 //TablaHijo.Imprimir();
                 SymT.addSymbolTableHijo(TablaHijo);
@@ -302,57 +348,382 @@ public class GUI extends javax.swing.JFrame {
         //System.out.println("HOLA MUNDOOOO!!");
     }
 
+    private SymbolTable ForDec(MyNode nodo, SymbolTable SymTable) {
+        MyNode data = nodo.getHijos().get(0);
+        String[] parts = data.value.split("-");
+        boolean existe = SymTable.searchSymbolEnAmbito(parts[0]);
+        if (!existe) {
+            String info = parts[1].replaceAll("INT:", "");
+            SymbolT tempSymbol;
+            tempSymbol = new SymbolT(parts[0],info, "int", Offset, 4);
+            SymTable.addSymbol(tempSymbol);
+        }else{
+            s.errores2.add("ERROR LA VARIABLE \" " + parts[0] + "\" YA ESTA DEFINIDA" );
+                            
+        }
+
+        return SymTable;
+    }
+
     private SymbolTable buscarDec(MyNode nodo, SymbolTable SymTable) {
         MyNode type = nodo.getHijos().get(0);
         //if ((type.value).equals("int")) {
-            MyNode Variables = type.getHijos().get(0);
-            
-            System.out.println("HMM ENTRO CUANTS VECES");
-            for (int i = 0; i < Variables.getHijos().size(); i++) {
-                MyNode SingleVarName = Variables.getHijos().get(i);
-                    SymbolT tempSymbol;
-                    String value = (SingleVarName.getHijos().get(0)).value;
-                    value = value.replaceAll("INT:", "");
-                    value = value.replaceAll("BOOL:", "");
-                    value = value.replaceAll("CHAR:", "");
-                    value = value.replaceAll("STRING:", "");
-               System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"+SymTable.searchSymbolEnAmbito(SingleVarName.value)); 
-               switch (type.value) {
+        MyNode Variables = type.getHijos().get(0);
+
+        System.out.println("HMM ENTRO CUANTS VECES");
+        for (int i = 0; i < Variables.getHijos().size(); i++) {
+            boolean TypeErrorFound = false;
+            MyNode SingleVarName = Variables.getHijos().get(i);
+            SymbolT tempSymbol;
+            String value = (SingleVarName.getHijos().get(0)).value;
+            //value = value.replaceAll("INT:", "");
+            //value = value.replaceAll("BOOL:", "");
+            // value = value.replaceAll("CHAR:", "");
+            //value = value.replaceAll("STRING:", "");
+            String[] parts;
+            parts = value.split("\\+|\\-|\\*|\\/");
+
+            String VarAssignValue = "";
+            String temporalValue = "";
+            int acum = 0;
+            for (int j = 0; j < parts.length; j++) {
+                System.out.println("parts:" + parts[j]);
+                if (parts[j].contains("ID")) {
+                    String temp = parts[j].replaceAll("ID:", "");
+                    temp = temp.replaceAll(" ", "");
+                    //System.out.println("TEMP:"+temp + "-"+temp.length());
+                    boolean isID = SymTable.searchSymbol(temp);
+                    System.out.println("RESPONSE #4" + isID);
+                    if (isID) {
+                        SymbolT searchId = SymTable.getSymbolInTree(temp);
+                        System.out.println(searchId.type + " ESTE ES EL VALOR" + searchId.value);
+                        if (searchId.type.equals(type.value)) {
+                            if (searchId.type.contains("int")) {
+                                System.out.println("CONTENGO INT########################AL IN FINAL");
+                                System.out.println(searchId.value);
+                                acum = acum + Integer.parseInt(searchId.value);
+                                temporalValue = Integer.toString(acum);
+                            } else {
+                                System.out.println("HMMM ES OTRO TIPO");
+                                temporalValue = searchId.value;
+                            }
+                        } else {
+                            //System.out.println("ERROR TIPO DEL ID NO ES EL MISMO DE LA VARIABLE");
+                            s.errores2.add("ERROR LA VARIABLE \" " + SingleVarName.value + "\" ES TIPO: '" + type.value + "' Y SE ESTA ASSIGN EL ID: '" + searchId.name + "' TIPO: " + searchId.type);
+                            TypeErrorFound = true;
+                        }
+
+                    }
+
+                } else if (parts[j].contains("INT:")) {
+                    String temp = parts[j].replaceAll("INT:", "");
+                    temp = temp.replaceAll(" ", "");
+                    acum = acum + Integer.parseInt(temp);
+                    temporalValue = Integer.toString(acum);
+                } else {
+                    String temp = parts[j].replaceAll("CHAR:", "");
+                    temp = parts[j].replaceAll("BOOL:", "");
+                    temp = parts[j].replaceAll("STRING:", "");
+                    temp = temp.replaceAll(" ", "");
+                    temporalValue = temp;
+                }
+                if (j + 1 == parts.length && parts.length > 1) {
+                    System.out.println("ES IGUAL AL LENGTH......");
+                    VarAssignValue = Integer.toString(acum);
+                }
+                if (parts.length == 1) {
+                    System.out.println("ENTRA AL ESLE SIN DEFINIR");
+                    VarAssignValue = temporalValue;
+                }
+                System.out.println("------------------------------------------------------------------------------------");
+            }
+
+            System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$" + SymTable.searchSymbolEnAmbito(SingleVarName.value));
+            switch (type.value) {
+                case "int":
+                    tempSymbol = new SymbolT(SingleVarName.value, VarAssignValue, type.value, Offset, 4);
+                    Offset = Offset + 4;
+                    break;
+                case "char":
+                    System.out.println("ES TIPO CHAR");
+                    tempSymbol = new SymbolT(SingleVarName.value, VarAssignValue, type.value, Offset, 3);
+                    Offset = Offset + 3;
+                    break;
+                case "bool":
+                    tempSymbol = new SymbolT(SingleVarName.value, VarAssignValue, type.value, Offset, 1);
+                    Offset = Offset + 1;
+                    break;
+                case "string":
+                    System.out.println("SOY UN STRING");
+                    tempSymbol = new SymbolT(SingleVarName.value, VarAssignValue, type.value, Offset, value.length());
+                    Offset = Offset + value.length();
+                    break;
+                default:
+                    tempSymbol = new SymbolT(SingleVarName.value, VarAssignValue, type.value, SymTable.tableOffset, 10);
+                    Offset = Offset + 10;
+                    break;
+            }
+
+            // System.out.println(tempSymbol);
+            SymTable.addSymbol(tempSymbol);
+            //SymTable.setTableOffset(SymTable.tableOffset + size);
+
+        }
+        llenarLogErrores();
+        return SymTable;
+        //System.out.println("ES de TIPO ENTERO");
+        //} else {
+        // System.out.println("NO ES DE TIPO ENTERO");
+        // return null;
+        //}
+    }
+
+    private SymbolTable VarAssign(MyNode nodo, SymbolTable SymTable) {
+        MyNode id = nodo.getHijos().get(0);
+        boolean varExist = SymTable.searchSymbol(id.value);
+        SymbolT varSearched = SymTable.getSymbolInTree(id.value);
+        boolean TypeErrorFound = false;
+        if (varExist) {
+            System.out.println("SI EXISTE..........");
+            MyNode data = id.getHijos().get(0);
+            String value = data.value;
+            String[] parts;
+            parts = value.split("\\+|\\-|\\*|\\/");
+
+            String VarAssignValue = "";
+            String temporalValue = "";
+            int acum = 0;
+            for (int i = 0; i < parts.length; i++) {
+                System.out.println("parts:" + parts[i]);
+                if (parts[i].contains("ID")) {
+                    String temp = parts[i].replaceAll("ID:", "");
+                    temp = temp.replaceAll(" ", "");
+                    //System.out.println("TEMP:"+temp + "-"+temp.length());
+                    boolean isID = SymTable.searchSymbol(temp);
+                    System.out.println("RESPONSE #4" + isID);
+                    if (isID) {
+                        SymbolT searchId = SymTable.getSymbolInTree(temp);
+                        System.out.println(searchId.type + " ESTE ES EL VALOR" + searchId.value);
+                        if (searchId.type.equals(varSearched.type)) {
+                            if (searchId.type.contains("int")) {
+                                //System.out.println("CONTENGO INT########################");
+                                acum = acum + Integer.parseInt(searchId.value);
+                                temporalValue = Integer.toString(acum);
+                            } else {
+                                temporalValue = searchId.value;
+                            }
+                        } else {
+                            // System.out.println("ERROR TIPO DEL ID NO ES EL MISMO DE LA VARIABLE");
+                            s.errores2.add("ERROR LA VARIABLE '" + varSearched.name + "' ES TIPO: '" + varSearched.type + "' Y SE ESTA ASSIGN EL ID: '" + searchId.name + "' TIPO: " + searchId.type);
+                            TypeErrorFound = true;
+                        }
+
+                    }
+
+                } else if (parts[i].contains("INT:")) {
+                    String temp = parts[i].replaceAll("INT:", "");
+                    temp = temp.replaceAll(" ", "");
+                    acum = acum + Integer.parseInt(temp);
+                    temporalValue = Integer.toString(acum);
+                } else {
+                    String temp = parts[i].replaceAll("CHAR:", "");
+                    temp = temp.replaceAll("BOOL:", "");
+                    temp = temp.replaceAll("STRING:", "");
+                    temp = temp.replaceAll(" ", "");
+                    temporalValue = temp;
+                }
+                if (i + 1 == parts.length && parts.length > 1) {
+                    System.out.println("ES IGUAL AL LENGTH......");
+                    VarAssignValue = Integer.toString(acum);
+                }
+                if (parts.length == 1) {
+                    System.out.println("ENTRA AL ESLE SIN DEFINIR");
+                    VarAssignValue = temporalValue;
+                }
+            }
+            if (!TypeErrorFound) {
+                SymbolT tempSymbol;
+                switch (varSearched.type) {
                     case "int":
-                         tempSymbol = new SymbolT(SingleVarName.value,value , type.value,Offset, 4);
-                         Offset = Offset+4;
+                        tempSymbol = new SymbolT(varSearched.name, VarAssignValue, varSearched.type, Offset, 4);
+                        Offset = Offset + 4;
                         break;
                     case "char":
                         System.out.println("ES TIPO CHAR");
-                         tempSymbol= new SymbolT(SingleVarName.value, value, type.value,Offset, 3);
-                         Offset = Offset+3;
+                        tempSymbol = new SymbolT(varSearched.name, VarAssignValue, varSearched.type, Offset, 3);
+                        Offset = Offset + 3;
                         break;
                     case "bool":
-                        tempSymbol= new SymbolT(SingleVarName.value, value, type.value,Offset, 1);
-                        Offset = Offset+1;
+                        tempSymbol = new SymbolT(varSearched.name, VarAssignValue, varSearched.type, Offset, 1);
+                        Offset = Offset + 1;
                         break;
                     case "string":
                         System.out.println("SOY UN STRING");
-                        tempSymbol= new SymbolT(SingleVarName.value, value, type.value,Offset, value.length());
-                        Offset = Offset+value.length();
+                        tempSymbol = new SymbolT(varSearched.name, VarAssignValue, varSearched.type, Offset, VarAssignValue.length());
+                        Offset = Offset + value.length();
                         break;
-                    default: 
-                        tempSymbol = new SymbolT(SingleVarName.value, value, type.value,SymTable.tableOffset, 10);
-                        Offset = Offset+10;
+                    default:
+                        tempSymbol = new SymbolT(varSearched.name, VarAssignValue, varSearched.type, SymTable.tableOffset, 10);
+                        Offset = Offset + 10;
                         break;
                 }
-                            
-                // System.out.println(tempSymbol);
                 SymTable.addSymbol(tempSymbol);
-                //SymTable.setTableOffset(SymTable.tableOffset + size);
-                
+                System.out.println(parts.length + "DATA:" + data.value);
+            } else {
+                System.out.println("LEVANTAR ERROR.....");
             }
-            return SymTable;
-            //System.out.println("ES de TIPO ENTERO");
-        //} else {
-           // System.out.println("NO ES DE TIPO ENTERO");
-           // return null;
-        //}
+
+        } else {
+            System.out.println("NO EXISTE..........");
+        }
+        llenarLogErrores();
+        return SymTable;
+    }
+
+    private SymbolTable Condition(MyNode nodo, SymbolTable SymTable, int pos, String funcion) {
+        MyNode condition = nodo.getHijos().get(pos);
+        String[] condition_parts;
+        condition_parts = condition.value.split("\\|");
+        //System.out.println("COND" + condition.value);
+        for (int i = 0; i < condition_parts.length; i++) {
+            String[] condition_partsAND;
+            //System.out.println("LOOOOOOOOOL" + condition_parts[i]);
+            condition_partsAND = condition_parts[i].split("\\&");
+            for (int j = 0; j < condition_partsAND.length; j++) {
+                //System.out.println("LOOOOOOOOOL11111111" + condition_partsAND[j]);
+                String[] operation;
+                String[] rightSide;
+                String[] leftSide;
+                String operator = "";
+                //System.out.println("HMMM" + condition_partsAND[j]);
+                if (condition_partsAND[j].contains("==")) {
+                    operation = condition_partsAND[j].split("==");
+                    operator = "==";
+                } else if (condition_partsAND[j].contains("<=")) {
+                    operation = condition_partsAND[j].split("<=");
+                    operator = "<=";
+                } else if (condition_partsAND[j].contains(">=")) {
+                    operation = condition_partsAND[j].split(">=");
+                    operator = ">=";
+
+                } else if (condition_partsAND[j].contains("!=")) {
+                    operation = condition_partsAND[j].split("!=");
+                    operator = "!=";
+
+                } else if (condition_partsAND[j].contains("<")) {
+                    operation = condition_partsAND[j].split("<");
+                    operator = "<";
+
+                } else {
+                    //System.out.println("ENTRA AL ELSE");
+                    operation = condition_partsAND[j].split(">");
+                    operator = ">";
+                }
+                rightSide = operation[1].split(":");
+                leftSide = operation[0].split(":");
+                //System.out.println("R " + rightSide[0] + " -- " + "L " + leftSide[0]);
+                //System.out.println("R " + rightSide[1] + " -- " + "L " + leftSide[1]);
+                boolean varExistR = true;
+                boolean varExistL = true;
+                if (rightSide[0].replaceAll(" ", "").contains("ID") && !SymTable.searchSymbol(rightSide[1].replaceAll(" ", ""))) {
+                    varExistR = false;
+                    //System.out.println("ENTAR???");
+                }
+                if (leftSide[0].replaceAll(" ", "").contains("ID") && !SymTable.searchSymbol(leftSide[1].replaceAll(" ", ""))) {
+                    varExistL = false;
+                    //System.out.println("HMMMMMMMMMMMMMMMMMMM");
+                }
+                SymbolT RightvarSearched = SymTable.getSymbolInTree(rightSide[1].replaceAll(" ", ""));
+                SymbolT LeftvarSearched = SymTable.getSymbolInTree(leftSide[1].replaceAll(" ", ""));
+                boolean TypeErrorFound = false;
+                //System.out.println("DATA" + RightvarSearched + LeftvarSearched);
+
+                String rS = "";
+                String lS = "";
+                boolean response = false;
+                boolean typeError = false;
+
+                if (RightvarSearched != null && LeftvarSearched != null) {
+                    if (RightvarSearched.type.equals(LeftvarSearched.type)) {
+                        response = TypeSwithOperator(RightvarSearched.type, operator);
+                        rS = RightvarSearched.name;
+                        lS = LeftvarSearched.name;
+
+                    } else {
+                        //System.out.println("");
+                        typeError = true;
+                    }
+                } else if ((RightvarSearched == null && LeftvarSearched != null)) {
+                    if (rightSide[0].replaceAll(" ", "").toLowerCase().equals(LeftvarSearched.type)) {
+                        response = TypeSwithOperator(LeftvarSearched.type, operator);
+                        rS = rightSide[1].replaceAll(" ", "").toLowerCase();
+                        lS = LeftvarSearched.name;
+                        //System.out.println("RIGHT SIDE NULL");
+                    } else {
+                        typeError = true;
+                    }
+                } else if ((RightvarSearched != null && LeftvarSearched == null)) {
+                    //System.out.println("LEFT SIDE NULL");
+                    if (RightvarSearched.type.equals(leftSide[0].replaceAll(" ", "").toLowerCase())) {
+                        response = TypeSwithOperator(RightvarSearched.type, operator);
+                        rS = RightvarSearched.name;
+                        lS = leftSide[1].replaceAll(" ", "").toLowerCase();
+                    } else {
+                        typeError = true;
+                    }
+                } else {
+                    if (rightSide[0].replaceAll(" ", "").toLowerCase().equals(leftSide[0].replaceAll(" ", "").toLowerCase())) {
+                        response = TypeSwithOperator(rightSide[0].replaceAll(" ", ""), operator);
+                        //System.out.println("ENTRO AL COMP STATEMENT");
+                        rS = rightSide[1].replaceAll(" ", "").toLowerCase();
+                        lS = leftSide[1].replaceAll(" ", "").toLowerCase();
+                        //System.out.println("AMBOS SON NULLSS");
+
+                    } else {
+                        typeError = true;
+                    }
+                }
+                if (varExistL && varExistR) {
+                    if (response) {
+                        //GENRATE ERROR MESSAGE COMPILER
+                        //.out.println("ERROR EN BLOQUE :"+funcion + " VARABLES: "+lS + " -y- "+ rS+" NO PUEDEN UTILIZAR EL OPERATOR "+operator);
+                        s.errores2.add("ERROR EN BLOQUE :" + funcion + " VARABLES: " + lS + " -y- " + rS + " NO PUEDEN UTILIZAR EL OPERATOR " + operator);
+                    }
+                    if (typeError) {
+                        //System.out.println("ERROR EN BLOQUE :"+funcion + " VARABLES: "+lS + " -y- "+ rS+" SON DE TIPOS DISITNTOS.");
+                        s.errores2.add("ERROR EN BLOQUE :" + funcion + " VARABLES: " + lS + " -y- " + rS + " SON DE TIPOS DISITNTOS.");
+
+                    }
+                } else {
+                    if (!varExistL) {
+                        s.errores2.add("ERROR EN BLOQUE :" + funcion + " VARABLES: " + leftSide[1].replaceAll(" ", "") + " NO ESTA DEFINIDA.1");
+                    }
+                    if (!varExistR) {
+                        s.errores2.add("ERROR EN BLOQUE :" + funcion + " VARABLES: " + rightSide[1].replaceAll(" ", "") + " NO ESTA DEFINIDA.2");
+                    }
+                }
+                System.out.println("ESTE ES EL RESPONSE :" + response);
+
+            }
+        }
+
+        llenarLogErrores();
+        return SymTable;
+    }
+
+    private boolean TypeSwithOperator(String type, String operator) {
+        type = type.toUpperCase();
+        boolean ErrorFLag = false;
+        if (type.equals("INT")) {
+            //
+        } else {
+            if (operator.contains("==") || operator.contains("!=")) {
+                ///
+            } else {
+                ErrorFLag = true;
+            }
+        }
+        return ErrorFLag;
     }
 
     private void llenarTree(MyNode p_raiz, DefaultMutableTreeNode nodo) {

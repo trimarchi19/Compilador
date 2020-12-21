@@ -489,6 +489,7 @@ variableDeclaration ::=         SET type:t varDeclList:v DELIM {:
                                                         ((temp.value).contains("CHAR_MATRIX") && (((MyNode) t).value).contains("array2d:char")) ||
                                                         ((temp.value).contains("INT_MATRIX") && (((MyNode) t).value).contains("array2d:int")) ||
                                                         ((temp.value).contains("BOOL") && (((MyNode) t).value).equals("bool")) ||
+                                                        ((temp.value).contains("STRING") && (((MyNode) t).value).equals("string")) ||
                                                         ((temp.value).contains("FUNCTION")) ||
                                                         ((temp.value).contains("ID")) ||
                                                         (temp.value).contains("null")
@@ -518,6 +519,7 @@ variableDeclaration ::=         SET type:t varDeclList:v DELIM {:
                                                         ((temp.value).contains("CHAR_MATRIX") && (((MyNode) t).value).contains("array2d:char")) ||
                                                         ((temp.value).contains("INT_MATRIX") && (((MyNode) t).value).contains("array2d:int")) ||
                                                         ((temp.value).contains("BOOL") && (((MyNode) t).value).equals("bool")) ||
+                                                        ((temp.value).contains("STRING") && (((MyNode) t).value).equals("string")) ||
                                                         ((temp.value).contains("FUNCTION")) ||
                                                         ((temp.value).contains("ID")) ||
                                                         (temp.value).contains("null")
@@ -619,7 +621,11 @@ assignment ::= arithmeticExp:aE {:
 				;
 
 arithmeticExp ::= arithmeticExp:e opsum:opsum term:t {:
-                                    if((((MyNode)e).value).contains("INT")  && (((MyNode)t).value).contains("INT")){
+                                    if((((MyNode)e).value).contains("INT")  && (((MyNode)t).value).contains("INT") ||
+                                    (((MyNode)e).value).contains("ID")  && (((MyNode)t).value).contains("ID") ||
+                                    (((MyNode)e).value).contains("ID")  && (((MyNode)t).value).contains("INT") ||
+                                    (((MyNode)e).value).contains("INT")  && (((MyNode)t).value).contains("ID") 
+                    ){
 					 if ((((MyNode)opsum).value).equals("+")) {
                                                         System.out.println("SUMAAA");
                                                         MyNode nuevoNodo = new MyNode(((MyNode)e).value +" + "+((MyNode)t).value);
@@ -631,7 +637,7 @@ arithmeticExp ::= arithmeticExp:e opsum:opsum term:t {:
 							RESULT = nuevoNodo;
                                            } 
 					}else{
-                                              parser.addError("ERROR: OPERACION ARITMETICA SOLO SE PUEDE HACER CON TIPO ENTERO");  
+                                              parser.addError("ERROR: OPERACION ARITMETICA SOLO SE PUEDE HACER CON TIPO ENTERO SUMA/RESTA");  
                                          }
 					:}
 					|term:t {:
@@ -643,7 +649,11 @@ arithmeticExp ::= arithmeticExp:e opsum:opsum term:t {:
 
 
 term ::= term:t opmultdiv:op factor:f {:
-                        if((((MyNode)t).value).contains("INT")  && (((MyNode)f).value).contains("INT")){
+                        if((((MyNode)t).value).contains("INT")  && (((MyNode)f).value).contains("INT") ||
+                                    (((MyNode)t).value).contains("ID")  && (((MyNode)f).value).contains("ID") ||
+                                    (((MyNode)t).value).contains("ID")  && (((MyNode)f).value).contains("INT") ||
+                                    (((MyNode)t).value).contains("INT")  && (((MyNode)f).value).contains("ID") 
+                        ){
     				if ((((MyNode)op).value).equals("*")) {
                                 
                                       MyNode nuevoNodo = new MyNode(((MyNode)t).value +" * "+((MyNode)f).value);
@@ -655,7 +665,7 @@ term ::= term:t opmultdiv:op factor:f {:
                                       RESULT = nuevoNodo;
 				}
                         }else{
-                            parser.addError("ERROR: OPERACION ARITMETICA SOLO SE PUEDE HACER CON TIPO ENTERO");  
+                            parser.addError("ERROR: OPERACION ARITMETICA SOLO SE PUEDE HACER CON TIPO ENTERO MULT/DIV");  
                         }
 			:}
 
@@ -1120,8 +1130,8 @@ forArthmExp ::=         ID:id SUMRES:aES1 SUMRES:aES2 {:
 			;
 
 inits ::= INT:i ID:id AS value:v {:
-                                    MyNode temp =new MyNode(id.toString());
-                                    MyNode nuevoNodo = new MyNode(i.toString() + temp.value);
+
+                                    MyNode nuevoNodo = new MyNode((String)id + "-"+((MyNode)v).value);
                                     RESULT = nuevoNodo;	
 		:}
 		|INT ID error value {:
